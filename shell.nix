@@ -12,5 +12,5 @@
     nodePackages.esy
     which
   ]);
-  runScript = "zsh";
+  runScript = "esy zsh";
 }).env
