@@ -25,6 +25,7 @@ Let host_state := host_state host_instance.
 Inductive reduce_simple : seq administrative_instruction -> seq administrative_instruction -> Prop :=
 
 (** unop **)
+(* (t.const c) t.unop -→ t.const unop_t (c) *)
   | rs_unop : forall v op t,
     reduce_simple [::AI_basic (BI_const v); AI_basic (BI_unop t op)] [::AI_basic (BI_const (@app_unop op v))]
                    
@@ -37,6 +38,7 @@ Inductive reduce_simple : seq administrative_instruction -> seq administrative_i
     reduce_simple [::AI_basic (BI_const v1); AI_basic (BI_const v2); AI_basic (BI_binop t op)] [::AI_trap]
                   
   (** testops **)
+  (** why are these not parametrised on types? like rs_relop is **)
   | rs_testop_i32 :
     forall c testop,
     reduce_simple [::AI_basic (BI_const (VAL_int32 c)); AI_basic (BI_testop T_i32 testop)] [::AI_basic (BI_const (VAL_int32 (wasm_bool (@app_testop_i i32t testop c))))]
