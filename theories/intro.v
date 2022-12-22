@@ -61,6 +61,7 @@ Section intro.
   Proof.
     move => hs1 s1 f1 es1 hs2 s2 f2 es2 es0.
     (* TODO read up on `induction using` *)
+    (* TODO does this need induction at all? *)
     induction es0 as [|es0 e IHes0] using last_ind.
     - (* Base case: just need to use es ++ [::] = es *)
       intros H. repeat rewrite cats0. apply H.
@@ -98,22 +99,17 @@ Section intro.
       reduce hs1 s1 f1 (vs ++ es1) hs2 s2 f2 (vs ++ es2).
   Proof.
     move => hs1 s1 f1 es1 hs2 s2 f2 es2 vs Hvs Hes1es2.
-    induction vs.
-    - apply Hes1es2.
-      (*
-         why is IHvs now (a->c) and not (a->b->c)?
-         did Coq automatically notice b holds?
-      *)
-    - inversion Hvs as [Hvs'].
-      (* this could be used for IHvs? *)
-      (* could reflection be used instead of andb_true_iff? *)
-      apply Bool.andb_true_iff in Hvs' as [const_a const_vs].
-      apply IHvs in const_vs as H_vs_es1_es2.
-      simpl.
-      remember (vs ++ es1) as vs_es1.
-      remember (vs ++ es2) as vs_es2.
-
-  Admitted.
+    eapply r_label; eauto; try apply/lfilledP.
+    - assert (LF: lfilledInd 0 (LH_base vs [::]) es1 (vs ++ es1 ++ [::])).
+      { by apply LfilledBase. }
+      rewrite <- cats0; rewrite <- catA.
+      apply LF.
+      (* as above, worth refactoring the two subgoals? *)
+    - assert (LF: lfilledInd 0 (LH_base vs [::]) es2 (vs ++ es2 ++ [::])).
+      { by apply LfilledBase. }
+      rewrite <- cats0; rewrite <- catA.
+      apply LF.
+  Qed.
 
   (* This lemma can of course be derived from the two above. However, its proof itself is
      even simpler. *)
