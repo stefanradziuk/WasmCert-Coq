@@ -59,22 +59,19 @@ Section intro.
       reduce hs1 s1 f1 es1 hs2 s2 f2 es2 ->
       reduce hs1 s1 f1 (es1 ++ es0) hs2 s2 f2 (es2 ++ es0).
   Proof.
-    move => hs1 s1 f1 es1 hs2 s2 f2 es2 es0.
-    intros H.
+    move => hs1 s1 f1 es1 hs2 s2 f2 es2 es0 H.
+    assert (LF: forall es, lfilledInd 0 (LH_base [::] es0) es (es ++ es0)).
+    (* How does `by` make this different from `apply LfilledBase.`? Just extra automation?
+       Also, should be using intros or move?
+    *)
+    { intros. by apply LfilledBase. }
     (* Not sure how this works precisely but it gives me the subgoals I wanted.
        Found this used for applying r_label elsewhere in the code.
        Need to read up on automation.
        How is eapply different to apply? They seem to produce the same results here. *)
     eapply r_label; eauto; try apply/lfilledP.
-    (* Should I even be proving this? is there a lemma to get this directly? *)
-      * assert (LF: lfilledInd 0 (LH_base [::] es0) es1 (es1 ++ es0)).
-        (* How is this different from just `apply LfilledBase.`? Just extra automation? *)
-        { by apply LfilledBase. }
-        apply LF.
-      * (* Repetition from above. Any point in factoring this out? *)
-        assert (LF: lfilledInd 0 (LH_base [::] es0) es2 (es2 ++ es0)).
-        { by apply LfilledBase. }
-        apply LF.
+    - apply LF.
+    - apply LF.
   Qed.
 
   (* Now note that given Wasm's representation of value stack squashed into the
@@ -86,16 +83,11 @@ Section intro.
       reduce hs1 s1 f1 (vs ++ es1) hs2 s2 f2 (vs ++ es2).
   Proof.
     move => hs1 s1 f1 es1 hs2 s2 f2 es2 vs Hvs Hes1es2.
+    assert (LF: forall es, lfilledInd 0 (LH_base vs [::]) es (vs ++ es ++ [::])).
+    { intros. by apply LfilledBase. }
     eapply r_label; eauto; try apply/lfilledP.
-    - assert (LF: lfilledInd 0 (LH_base vs [::]) es1 (vs ++ es1 ++ [::])).
-      { by apply LfilledBase. }
-      rewrite <- cats0; rewrite <- catA.
-      apply LF.
-      (* as above, worth refactoring the two subgoals? *)
-    - assert (LF: lfilledInd 0 (LH_base vs [::]) es2 (vs ++ es2 ++ [::])).
-      { by apply LfilledBase. }
-      rewrite <- cats0; rewrite <- catA.
-      apply LF.
+    - rewrite <- cats0; rewrite <- catA. apply LF.
+    - rewrite <- cats0; rewrite <- catA. apply LF.
   Qed.
 
   (* This lemma can of course be derived from the two above. However, its proof itself is
@@ -105,9 +97,13 @@ Section intro.
       reduce hs1 s1 f1 es1 hs2 s2 f2 es2 ->
       reduce hs1 s1 f1 (vs ++ es1 ++ es0) hs2 s2 f2 (vs ++ es2 ++ es0).
   Proof.
-  Admitted.
-
-
+    move => hs1 s1 f1 es1 hs2 s2 f2 es2 vs es0 Hconst H.
+    assert (LF: forall es, lfilledInd 0 (LH_base vs es0) es (vs ++ es ++ es0)).
+    { intros. by apply LfilledBase. }
+    eapply r_label; eauto; try apply/lfilledP.
+    - apply LF.
+    - apply LF.
+  Qed.
 
 
   (* Typing lemmas *)
