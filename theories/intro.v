@@ -60,36 +60,23 @@ Section intro.
       reduce hs1 s1 f1 (es1 ++ es0) hs2 s2 f2 (es2 ++ es0).
   Proof.
     move => hs1 s1 f1 es1 hs2 s2 f2 es2 es0.
-    (* TODO read up on `induction using` *)
-    (* TODO does this need induction at all? *)
-    induction es0 as [|es0 e IHes0] using last_ind.
-    - (* Base case: just need to use es ++ [::] = es *)
-      intros H. repeat rewrite cats0. apply H.
-    - (* Inductive case *)
-      intros H. apply IHes0 in H as IHes0'.
-      (* Now need to frame off the e at the end *)
-      repeat rewrite <- rcons_cat.
-      (* No longer matters that the list is a concatenation *)
-      remember (es1 ++ es0) as es10. remember (es2 ++ es0) as es20.
-      (* Go from `rcons es10 e` to `es10 ++ [::e]` *)
-      repeat rewrite <- cats1.
-      (* Not sure how this works precisely but it gives me the subgoals I wanted.
-         Found this used for applying r_label elsewhere in the code.
-         Need to read up on automation.
-         How is eapply different to apply? They seem to produce the same results here. *)
-      eapply r_label; eauto; try apply/lfilledP.
-      (* Should I even be proving this? is there a lemma to get this directly? *)
-        * assert (LF: lfilledInd 0 (LH_base [::] [::e]) es10 (es10 ++ [::e])).
-          (* How is this different from just `apply LfilledBase.`? Just extra automation? *)
-          { by apply LfilledBase. }
-          apply LF.
-        * (* Repetition from above. Any point in factoring this out? *)
-          assert (LF: lfilledInd 0 (LH_base [::] [::e]) es20 (es20 ++ [::e])).
-          { by apply LfilledBase. }
-          apply LF.
+    intros H.
+    (* Not sure how this works precisely but it gives me the subgoals I wanted.
+       Found this used for applying r_label elsewhere in the code.
+       Need to read up on automation.
+       How is eapply different to apply? They seem to produce the same results here. *)
+    eapply r_label; eauto; try apply/lfilledP.
+    (* Should I even be proving this? is there a lemma to get this directly? *)
+      * assert (LF: lfilledInd 0 (LH_base [::] es0) es1 (es1 ++ es0)).
+        (* How is this different from just `apply LfilledBase.`? Just extra automation? *)
+        { by apply LfilledBase. }
+        apply LF.
+      * (* Repetition from above. Any point in factoring this out? *)
+        assert (LF: lfilledInd 0 (LH_base [::] es0) es2 (es2 ++ es0)).
+        { by apply LfilledBase. }
+        apply LF.
   Qed.
 
-  (* XXX LFilledBase might come in useful *)
   (* Now note that given Wasm's representation of value stack squashed into the
       * instruction list, adding more constants to the bottom of the value
       * stack should not matter as well. *)
