@@ -111,9 +111,36 @@ Section intro.
   (* An easier one to get started *)
 
 
+  Lemma sig_test: {x | x mod 2 = 0}.
+  Proof. exists 4. reflexivity. Qed.
+
+  Lemma sigT_test: {x & x mod 2 = 0}.
+  Proof. exists 4. reflexivity. Qed.
+
+  Lemma sig_sigT_test1: {x & {y | x mod y = 0}}.
+  Proof. exists 4. exists 2. reflexivity. Qed.
+
+  Lemma sig_sigT_test2: {x & {y & x mod y = 0}}.
+  Proof. exists 4. exists 2. reflexivity. Qed.
+
+  Lemma sig_sigT_test_H: 0 = 0 -> {x & {y | x mod y = 0}}.
+  Proof. intro H. exists 4. exists 2. reflexivity. Qed.
+
   (* In properties.v, there's a proof of another verison of this lemma with the goal being the non-constructive exists. However, that proof relies on inverting the typing rule, which cannot be used here due to the goal being a sigma type (try coping the proof and see where it goes wrong; the tactic auto_prove_bet has to be copied here as well for that to be observed).
      Find a way to prove this lemma with goal being the sigma-typed exists; likely it should be done by an induction on es1 or a destruct of e (or both). This might be quite difficult.
  *)
+
+  (* (be_typing C es t) ≡ (C ⊢ es : t) *)
+  (*
+  | bet_empty : forall C,
+    be_typing C [::] (Tf [::] [::])
+  | bet_composition : forall C es e t1s t2s t3s,
+    be_typing C es (Tf t1s t2s) ->
+    be_typing C [::e] (Tf t2s t3s) ->
+    be_typing C (app es [::e]) (Tf t1s t3s)
+
+     looking at bet_empty and bet_composition, wouldn't ts always be [::]?
+   *)
   Lemma composition_typing_single_sig: forall C es1 e t1s t2s,
     be_typing C (es1 ++ [::e]) (Tf t1s t2s) ->
     { ts & { t1s' & { t2s' & { t3s | t1s = ts ++ t1s' /\
@@ -121,9 +148,32 @@ Section intro.
                                        be_typing C es1 (Tf t1s' t3s) /\
                                        be_typing C [::e] (Tf t3s t2s') }}}}.
   Proof.
+    move => C es1 e t1s t2s HType.
+    exists [::], t1s, t2s.
+    induction es1 as [|e' es1' IHes].
+      (* i'd like to apply bet_empty to type es1=[::] and HType to type [::e]
+         hence we need to match bet_empty:
+           t1s' = [::]
+           t3s  = [::]
+         to match HType:
+           t3s  = t1s
+           t2s' = t2s (and hence ts = [::])
+
+         these implies t1s = t2s = [::],
+         but that doesn't make much sense as HType is not typing an empty seq?
+      *)
+    - exists [::].
+      simpl in HType.
+      split. { reflexivity. } split. { reflexivity. } split.
+      * (* goal: be_typing C [::] (Tf t1s [::]) *)
+        (* would need t1s = [::] to apply bet_empty,
+           but that doesn't necessarily work with HType
+           (for example: e is a binop)
+        *)
   Admitted.
 
   (* Another composition typing lemma, with the second component being a general list instead of just a singleton. *)
+  (* XXX induction on es2 and use composition_typing_single_sig? *)
   Lemma composition_typing_sig: forall C es1 es2 t1s t2s,
       be_typing C (es1 ++ es2) (Tf t1s t2s) ->
       { ts & { t1s' & { t2s' & { t3s | t1s = ts ++ t1s' /\
