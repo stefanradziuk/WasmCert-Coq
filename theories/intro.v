@@ -169,8 +169,8 @@ Section intro.
     destruct e. (* ? *)
      *)
 
-    move => C es1 e t1s t2s HType.
-    induction es1 as [|es1' e' IHes] using last_ind.
+    move => C es1 e.
+    induction es1 as [|e' es1' IHes].
       (* i'd like to apply bet_empty and weakening to type es1=[::] and HType
          to type [::e] hence:
            t1s' = t3s
@@ -178,15 +178,20 @@ Section intro.
            t3s  = t1s
            t2s' = t2s (and hence ts = [::])
       *)
-    - exists [::], t1s, t2s, t1s.
+    - move => t1s t2s HType. exists [::], t1s, t2s, t1s.
       simpl in HType.
       split. { reflexivity. } split. { reflexivity. } split.
       * apply bet_weakening_empty_both. apply bet_empty.
       * apply HType.
-    - (* XXX
-         HType : be_typing C (rcons es1' e' ++ [:: e]) (Tf t1s t2s)
-         IHes : be_typing C (es1' ++ [:: e]) (Tf t1s t2s) ->
-         don't think I'll be able to get the antecedent from HType
+    - move => t1s t2s HType.
+      (* XXX don't think I'll be able to get the antecedent from HType
+         I can't really type (es1' ++ [:: e]) without inverting HType?
+         unless I do this fully case by case?
+
+         HType : be_typing C ((e' :: es1') ++ [:: e]) (Tf t1s t2s)
+         IHes : forall t1s t2s : result_type,
+           be_typing C (es1' ++ [:: e]) (Tf t1s t2s) -> ...
+
        *)
   Admitted.
 
@@ -225,6 +230,7 @@ Section intro.
         apply (bet_weakening ts_H) in HType_es12.
 
         (* XXX the types in HType_es12 don't quite match the goal (yet?) *)
+        (* intros later? *)
         give_up.
       }
       apply IHes2 in IHes2_ante as [ts_IH [t1s'_IH [t2s'_IH [t3s_IH [
