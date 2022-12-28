@@ -141,6 +141,9 @@ Section intro.
 
      looking at bet_empty and bet_composition, wouldn't ts always be [::]?
    *)
+
+  Type last_ind.
+
   Lemma composition_typing_single_sig: forall C es1 e t1s t2s,
     be_typing C (es1 ++ [::e]) (Tf t1s t2s) ->
     { ts & { t1s' & { t2s' & { t3s | t1s = ts ++ t1s' /\
@@ -148,28 +151,43 @@ Section intro.
                                        be_typing C es1 (Tf t1s' t3s) /\
                                        be_typing C [::e] (Tf t3s t2s') }}}}.
   Proof.
+    (* maybe induction on es1 and then destruct on the elem added to es1? *)
+    (* induction from the right? *)
+    (*
     move => C es1 e t1s t2s HType.
-    exists [::], t1s, t2s.
-    induction es1 as [|e' es1' IHes].
-      (* i'd like to apply bet_empty to type es1=[::] and HType to type [::e]
-         hence we need to match bet_empty:
-           t1s' = [::]
-           t3s  = [::]
+    generalize es1.
+    apply last_ind.
+    - (* base case *)
+      (* This worked but I still have
+         HType : be_typing C (es1 ++ [:: e]) (Tf t1s t2s)
+         and I'd like it to be
+         HType : be_typing C ([::] ++ [:: e]) (Tf t1s t2s)
+      *)
+    generalize HType. (* this makes last_ind fail later? *)
+    -
+
+    destruct e. (* ? *)
+     *)
+
+    move => C es1 e t1s t2s HType.
+    induction es1 as [|es1' e' IHes] using last_ind.
+      (* i'd like to apply bet_empty and weakening to type es1=[::] and HType
+         to type [::e] hence:
+           t1s' = t3s
          to match HType:
            t3s  = t1s
            t2s' = t2s (and hence ts = [::])
-
-         these implies t1s = t2s = [::],
-         but that doesn't make much sense as HType is not typing an empty seq?
       *)
-    - exists [::].
+    - exists [::], t1s, t2s, t1s.
       simpl in HType.
       split. { reflexivity. } split. { reflexivity. } split.
-      * (* goal: be_typing C [::] (Tf t1s [::]) *)
-        (* would need t1s = [::] to apply bet_empty,
-           but that doesn't necessarily work with HType
-           (for example: e is a binop)
-        *)
+      * apply bet_weakening_empty_both. apply bet_empty.
+      * apply HType.
+    - (* XXX
+         HType : be_typing C (rcons es1' e' ++ [:: e]) (Tf t1s t2s)
+         IHes : be_typing C (es1' ++ [:: e]) (Tf t1s t2s) ->
+         don't think I'll be able to get the antecedent from HType
+       *)
   Admitted.
 
   (* Another composition typing lemma, with the second component being a general list instead of just a singleton. *)
@@ -181,6 +199,45 @@ Section intro.
                                          be_typing C es1 (Tf t1s' t3s) /\
                                          be_typing C es2 (Tf t3s t2s') }}}}.
   Proof.
+    intros C es1 es2 t1s t2s H.
+    induction es2 using last_ind.
+    (* looks like last_ind is not right here?
+       it enforces the same types for es2 and x:
+       H : be_typing C (es1 ++ rcons es2 x) (Tf t1s t2s)
+       IHes2 : be_typing C (es1 ++ es2) (Tf t1s t2s) ->
+     *)
+
+    - rewrite cats0 in H.
+      exists [::], t1s, t2s, t2s.
+      split. reflexivity. split. reflexivity. split.
+      * apply H.
+      * apply bet_weakening_empty_both. apply bet_empty.
+    - assert (IHes2_ante : be_typing C (es1 ++ es2) (Tf t1s t2s)).
+      { (* TODO destruct IHes2 instead of asserT? *)
+        rewrite <- cats1 in H. rewrite catA in H.
+        remember (es1 ++ es2) as es12.
+        apply composition_typing_single_sig in H.
+        (* this is a bit ugly *)
+        destruct H as [ts_H [t1s'_H [t2s'_H [t3s_H [
+          Heq_t1s [Heq_t2s [HType_es12 HType_x]]
+        ]]]]].
+        (* can get anything useful from HType_x here? mayhbe by inversion? *)
+        apply (bet_weakening ts_H) in HType_es12.
+
+        (* XXX the types in HType_es12 don't quite match the goal (yet?) *)
+        give_up.
+      }
+      apply IHes2 in IHes2_ante as [ts_IH [t1s'_IH [t2s'_IH [t3s_IH [
+        IHeq_t1s [IHeq_t2s [IHType_es1 IHType_es2]]]]]]
+      ].
+
+      (* is this even necessary?
+         can we apply composition_typing_single_sig instead? *)
+      exists ts_IH, t1s'_IH, t2s'_IH, t3s_IH.
+      split. auto. split. auto. split.
+      * apply IHType_es1.
+      * rewrite <- cats1. apply (bet_composition IHType_es2).
+        (* TODO need to type x somehow. destruct x? (28 cases) *)
   Admitted.
 
 
