@@ -253,6 +253,12 @@ Section intro.
   (* Here is a simple program that involves loops. Observe the code below. *)
   Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
 
+  (* loop: i32 -> i32
+     if (x == 0)
+       branch 1 (break?)
+     y = x + y
+     x -= 1
+  *)
   Definition loop_body : seq basic_instruction :=
     [ :: BI_get_local 0; BI_testop T_i32 TO_eqz; BI_br_if 1;
       BI_get_local 0; BI_get_local 1; BI_binop T_i32 (Binop_i BOI_add); BI_set_local 1;
@@ -270,8 +276,26 @@ Section intro.
     Lemma opsem_reduce_loop: forall hs s f (z:Z),
       (z >= 0)%Z ->
       f.(f_locs) = [:: i32_of_Z z; i32_of_Z 0] ->
-      exists f', reduce_trans (hs, s, f, code) (hs, s, f', result_place_holder).
-  Proof.
+      (* z * (z - 1) *)
+      exists f',
+        reduce_trans
+        (hs, s, f, code)
+        (hs, s, f', [:: AI_basic (BI_const (i32_of_Z (z * (z - 1) / 2)))]).
+    Proof.
+    dependent induction z.
+    - intros Hz Hflocs.
+      exists f. (* ? *)
+      unfold reduce_trans.
+      unfold opsem.reduce_trans.
+      apply Relation_Operators.rt_step. (* likely need more than one step *)
+      simpl.
+      (*
+         apply r_label to get to individual commands
+         then apply r_get_local and so on...
+         is there a way to automate this?
+         working like this would be too long in an inductive case.
+      *)
+
   Admitted.
 
 
