@@ -1,162 +1,65 @@
-(** Wasm interpreter **)
-(* (C) J. Pichon, M. Bodin - see LICENSE.txt *)
-
 From Wasm Require Import common.
 From Coq Require Import ZArith.BinInt.
 From mathcomp Require Import ssreflect ssrfun ssrnat ssrbool eqtype seq.
 From Wasm Require Export operations host type_checker.
 Require Import BinNat.
-
 Set Implicit Arguments.
 Unset Strict Implicit.
-
 Unset Printing Implicit Defensive.
-
 Inductive res_crash : Type :=
 | C_error : res_crash
 | C_exhaustion : res_crash.
-
 Scheme Equality for res_crash.
 Definition res_crash_eqb c1 c2 := is_left (res_crash_eq_dec c1 c2).
 Definition eqres_crashP : Equality.axiom res_crash_eqb :=
   eq_dec_Equality_axiom res_crash_eq_dec.
-
 Canonical Structure res_crash_eqMixin := EqMixin eqres_crashP.
 Canonical Structure res_crash_eqType := Eval hnf in EqType res_crash res_crash_eqMixin.
-
 Inductive res : Type :=
 | R_crash : res_crash -> res
 | R_trap : res
 | R_value : list value -> res.
-
 Definition res_eq_dec : forall r1 r2 : res, {r1 = r2} + {r1 <> r2}.
 Proof. decidable_equality. Defined.
-
 Definition res_eqb (r1 r2 : res) : bool := res_eq_dec r1 r2.
 Definition eqresP : Equality.axiom res_eqb :=
   eq_dec_Equality_axiom res_eq_dec.
-
 Canonical Structure res_eqMixin := EqMixin eqresP.
 Canonical Structure res_eqType := Eval hnf in EqType res res_eqMixin.
-
 Section Host_func.
-
 Variable host_function : eqType.
 Let host := host host_function.
-
 Variable host_instance : host.
-
 Let store_record := store_record host_function.
-(*Let administrative_instruction := administrative_instruction host_function.*)
 Let host_state := host_state host_instance.
-
-(*Let vs_to_es : seq value -> seq administrative_instruction := @vs_to_es _.*)
-
 Variable host_application_impl : host_state -> store_record -> function_type -> host_function -> seq value ->
                        (host_state * option (store_record * result)).
-
 Hypothesis host_application_impl_correct :
   (forall hs s ft hf vs hs' hres, (host_application_impl hs s ft hf vs = (hs', hres)) -> host_application hs s ft hf vs hs' hres).
-
 Inductive res_step : Type :=
 | RS_crash : res_crash -> res_step
 | RS_break : nat -> list value -> res_step
 | RS_return : list value -> res_step
 | RS_normal : list administrative_instruction -> res_step.
-
 Definition res_step_eq_dec : forall r1 r2 : res_step, {r1 = r2} + {r1 <> r2}.
 Proof. decidable_equality. Defined.
-
 Definition res_step_eqb (r1 r2 : res_step) : bool := res_step_eq_dec r1 r2.
 Definition eqres_stepP : Equality.axiom res_step_eqb :=
   eq_dec_Equality_axiom res_step_eq_dec.
-
 Canonical Structure res_step_eqMixin := EqMixin eqres_stepP.
 Canonical Structure res_step_eqType := Eval hnf in EqType res_step res_step_eqMixin.
-
 Definition crash_error := RS_crash C_error.
-
 Definition depth := nat.
-
 Definition fuel := nat.
-
 Definition config_tuple := ((host_state * store_record * frame * list administrative_instruction)%type).
-
 Definition config_one_tuple_without_e := (host_state * store_record * frame * list value)%type.
-
 Definition res_tuple := (host_state * store_record * frame * res_step)%type.
-(*
-Fixpoint split_vals (es : list basic_instruction) : ((list value) * (list basic_instruction))%type :=
-  match es with
-  | (EConst v) :: es' =>
-    let: (vs', es'') := split_vals es' in
-    (v :: vs', es'')
-  | _ => ([::], es)
-  end.
-
-(** [split_vals_e es]: takes the maximum initial segment of [es] whose elements
-    are all of the form [AI_basic (EConst v)];
-    returns a pair of lists [(ves, es')] where [ves] are those [v]'s in that initial
-    segment and [es] is the remainder of the original [es]. **)
-Fixpoint split_vals_e (es : list administrative_instruction) : ((list value) * (list administrative_instruction))%type :=
-  match es with
-  | (AI_basic (EConst v)) :: es' =>
-    let: (vs', es'') := split_vals_e es' in
-    (v :: vs', es'')
-  | _ => ([::], es)
-  end.
-
-Fixpoint split_n (es : list value) (n : nat) : ((list value) * (list value))%type :=
-  match (es, n) with
-  | ([::], _) => ([::], [::])
-  | (_, 0) => ([::], es)
-  | (e :: esX, n.+1) =>
-    let: (es', es'') := split_n esX n in
-    (e :: es', es'')
-  end.
-
-Definition expect {A B : Type} (ao : option A) (f : A -> B) (b : B) : B :=
-  match ao with
-  | Some a => f a
-  | None => b
-  end.
-
-Definition vs_to_es (vs : list value) : list administrative_instruction :=
-  v_to_e_list (rev vs).
-
-Definition e_is_trap (e : administrative_instruction) : bool :=
-  match e with
-  | AI_trap => true
-  | _ => false
-  end.
-
-Lemma e_is_trapP : forall e, reflect (e = AI_trap) (e_is_trap e).
-Proof.
-  case => //= >; by [ apply: ReflectF | apply: ReflectT ].
-Qed.
-
-(** [es_is_trap es] is equivalent to [es == [:: AI_trap]]. **)
-Definition es_is_trap (es : list administrative_instruction) : bool :=
-  match es with
-  | [::e] => e_is_trap e
-  | _ => false
-  end.
-
-Lemma es_is_trapP : forall l, reflect (l = [::AI_trap]) (es_is_trap l).
-Proof.
-  case; first by apply: ReflectF.
-  move=> // a l. case l => //=.
-  - apply: (iffP (e_is_trapP _)); first by elim.
-    by inversion 1.
-  - move=> >. by apply: ReflectF.
-Qed.*)
-
 Fixpoint run_step_with_fuel (fuel : fuel) (d : depth) (cfg : config_tuple) : res_tuple :=
   let: (hs, s, f, es) := cfg in
   match fuel with
   | 0 => (hs, s, f, RS_crash C_exhaustion)
   | fuel.+1 =>
-    let: (ves, es') := split_vals_e es in (** Framing out constants. **)
+    let: (ves, es') := split_vals_e es in
     match es' with
     | [::] => (hs, s, f, crash_error)
     | e :: es'' =>
@@ -172,26 +75,26 @@ Fixpoint run_step_with_fuel (fuel : fuel) (d : depth) (cfg : config_tuple) : res
         else (hs', s', f', r)
     end
   end
-    
+
 with run_one_step (fuel : fuel) (d : depth) (cfg : config_one_tuple_without_e) (e : administrative_instruction) : res_tuple :=
   let: (hs, s, f, ves) := cfg in
   match fuel with
   | 0 => (hs, s, f, RS_crash C_exhaustion)
   | fuel.+1 =>
     match e with
-    (* unop *)
+
     | AI_basic (BI_unop t op) =>
       if ves is v :: ves' then
         (hs, s, f, RS_normal (vs_to_es (app_unop op v :: ves')))
       else (hs, s, f, crash_error)
-    (* binop *)
+
     | AI_basic (BI_binop t op) =>
       if ves is v2 :: v1 :: ves' then
         expect (app_binop op v1 v2)
                (fun v => (hs, s, f, RS_normal (vs_to_es (v :: ves'))))
                (hs, s, f, RS_normal ((vs_to_es ves') ++ [::AI_trap]))
       else (hs, s, f, crash_error)
-    (* testops *)
+
     | AI_basic (BI_testop T_i32 testop) =>
       if ves is (VAL_int32 c) :: ves' then
         (hs, s, f, RS_normal (vs_to_es ((VAL_int32 (wasm_bool (@app_testop_i i32t testop c))) :: ves')))
@@ -201,12 +104,12 @@ with run_one_step (fuel : fuel) (d : depth) (cfg : config_one_tuple_without_e) (
         (hs, s, f, RS_normal (vs_to_es ((VAL_int32 (wasm_bool (@app_testop_i i64t testop c))) :: ves')))
       else (hs, s, f, crash_error)
     | AI_basic (BI_testop _ _) => (hs, s, f, crash_error)
-    (* relops *)
+
     | AI_basic (BI_relop t op) =>
       if ves is v2 :: v1 :: ves' then
         (hs, s, f, RS_normal (vs_to_es (VAL_int32 (wasm_bool (app_relop op v1 v2)) :: ves')))
       else (hs, s, f, crash_error)
-    (* convert & reinterpret *)
+
     | AI_basic (BI_cvtop t2 CVO_convert t1 sx) =>
       if ves is v :: ves' then
         if types_agree t1 v
@@ -222,7 +125,7 @@ with run_one_step (fuel : fuel) (d : depth) (cfg : config_one_tuple_without_e) (
         then (hs, s, f, RS_normal (vs_to_es (wasm_deserialise (bits v) t2 :: ves')))
         else (hs, s, f, crash_error)
       else (hs, s, f, crash_error)
-    (**)
+
     | AI_basic BI_unreachable => (hs, s, f, RS_normal ((vs_to_es ves) ++ [::AI_trap]))
     | AI_basic BI_nop => (hs, s, f, RS_normal (vs_to_es ves))
     | AI_basic BI_drop =>
@@ -285,7 +188,7 @@ with run_one_step (fuel : fuel) (d : depth) (cfg : config_one_tuple_without_e) (
           | Some cl =>
             if stypes s f.(f_inst) j == Some (cl_type cl)
             then (hs, s, f, RS_normal (vs_to_es ves' ++ [::AI_invoke a]))
-            else (hs, s, f, RS_normal (vs_to_es ves' ++ [::AI_trap]))        
+            else (hs, s, f, RS_normal (vs_to_es ves' ++ [::AI_trap]))
           | None => (hs, s, f, crash_error)
           end
         | None => (hs, s, f, RS_normal (vs_to_es ves' ++ [::AI_trap]))
@@ -405,7 +308,7 @@ with run_one_step (fuel : fuel) (d : depth) (cfg : config_one_tuple_without_e) (
     | AI_basic (BI_const _) => (hs, s, f, crash_error)
     | AI_invoke a =>
       match List.nth_error s.(s_funcs) a with
-      | Some cl => 
+      | Some cl =>
         match cl with
         | FC_func_native i (Tf t1s t2s) ts es =>
             let: n := length t1s in
@@ -475,8 +378,6 @@ with run_one_step (fuel : fuel) (d : depth) (cfg : config_one_tuple_without_e) (
     | AI_trap => (hs, s, f, crash_error)
     end
   end.
-
-(** Enough fuel so that [run_one_step] does not run out of exhaustion. **)
 Definition run_one_step_fuel : administrative_instruction -> nat.
 Proof.
   move=> es. induction es using administrative_instruction_rect';
@@ -492,15 +393,11 @@ Proof.
       end in
     aux (1 : nat).
 Defined.
-
-(** Enough fuel so that [run_step] does not run out of exhaustion. **)
 Definition run_step_fuel (cfg : config_tuple) : nat :=
   let: (hs, s, f, es) := cfg in
   1 + List.fold_left max (List.map run_one_step_fuel es) 0.
-
 Definition run_step (d : depth) (cfg : config_tuple) : res_tuple :=
   run_step_with_fuel (run_step_fuel cfg) d cfg.
-
 Fixpoint run_v (fuel : fuel) (d : depth) (cfg : config_tuple) : ((host_state * store_record * res)%type) :=
   let: (hs, s, f, es) := cfg in
   match fuel with
@@ -519,5 +416,4 @@ Fixpoint run_v (fuel : fuel) (d : depth) (cfg : config_tuple) : ((host_state * s
         | _ => (hs', s', R_crash C_error)
         end
   end.
-
 End Host_func.
