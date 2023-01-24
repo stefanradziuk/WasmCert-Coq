@@ -1036,22 +1036,24 @@ Proof.
       eapply bet_composition; eauto.
       by apply bet_weakening.
 Qed.
-(*
+
 Lemma e_composition_typing_single: forall s C es1 e t1s t2s,
     e_typing s C (es1 ++ [::e]) (Tf t1s t2s) ->
-    exists ts t1s' t2s' t3s, t1s = ts ++ t1s' /\
-                             t2s = ts ++ t2s' /\
-                             e_typing s C es1 (Tf t1s' t3s) /\
-                             e_typing s C [::e] (Tf t3s t2s').
+    { ts & { t1s' & { t2s' & { t3s & (t1s = ts ++ t1s') **
+                                     (t2s = ts ++ t2s') **
+                                     (e_typing s C es1 (Tf t1s' t3s)) **
+                                     (e_typing s C [::e] (Tf t3s t2s'))}}}}.
 Proof.
   move => s C es1 es2 t1s t2s HType.
   gen_ind_subst HType; extract_listn.
   - (* basic *)
-    apply b_e_elim in H3. destruct H3. subst.
-    rewrite to_b_list_concat in H.
-    apply composition_typing in H.
-    apply basic_concat in H1. destruct H1.
-    destruct H as [ts' [t1s' [t2s' [t3s' [H2 [H3 [H4 H5]]]]]]]. subst.
+    (* TODO how to give Ecat, H2, b a name explicitly? *)
+    apply b_e_elim in Ecat. destruct Ecat as [Heqbes Hbasic]. subst.
+    rewrite to_b_list_concat in b.
+    apply composition_typing in b.
+    apply basic_concat in Hbasic. destruct Hbasic.
+    (* TODO had to rename H2 to H2' because of autonaming above *)
+    destruct b as [ts' [t1s' [t2s' [t3s' [H2' [H3 [H4 H5]]]]]]]. subst.
     exists ts', t1s', t2s', t3s'.
     by repeat split => //=; apply ety_a' => //=.
   - (* composition *)
@@ -1059,7 +1061,7 @@ Proof.
     by exists [::], t1s0, t2s0, t2s.
   - (* weakening *)
     edestruct IHHType; eauto.
-    destruct H as [t1s' [t2s' [t3s' [H1 [H2 [H3 H4]]]]]]. subst.
+    destruct s as [t1s' [t2s' [t3s' [H1 [H2 [H3 H4]]]]]]. subst.
     exists (ts ++ x), t1s', t2s', t3s'.
     by repeat split => //; rewrite catA.
   - (* Trap *)
@@ -1083,10 +1085,10 @@ Qed.
 
 Lemma e_composition_typing: forall s C es1 es2 t1s t2s,
     e_typing s C (es1 ++ es2) (Tf t1s t2s) ->
-    exists ts t1s' t2s' t3s, t1s = ts ++ t1s' /\
-                             t2s = ts ++ t2s' /\
-                             e_typing s C es1 (Tf t1s' t3s) /\
-                             e_typing s C es2 (Tf t3s t2s').
+    { ts & { t1s' & { t2s' & { t3s & (t1s = ts ++ t1s') **
+                                     (t2s = ts ++ t2s') **
+                                     (e_typing s C es1 (Tf t1s' t3s)) **
+                                     (e_typing s C es2 (Tf t3s t2s'))}}}}.
 Proof.
   move => s C es1 es2.
   remember (rev es2) as es2'.
@@ -1115,7 +1117,7 @@ Proof.
       eapply ety_composition; eauto.
       by apply ety_weakening.
 Qed.
-*)
+
 Lemma bet_composition': forall C es1 es2 t1s t2s t3s,
     be_typing C es1 (Tf t1s t2s) ->
     be_typing C es2 (Tf t2s t3s) ->
@@ -1154,7 +1156,6 @@ Proof.
   by eapply bet_composition'; eauto.
 Qed.
 
-(*
 Lemma et_composition': forall s C es1 es2 t1s t2s t3s,
     e_typing s C es1 (Tf t1s t2s) ->
     e_typing s C es2 (Tf t2s t3s) ->
@@ -1183,7 +1184,6 @@ Proof.
     by apply HType1.
     by apply ety_weakening.
 Qed.
-*)
 End composition_typing_proofs.
 
 End Host.
