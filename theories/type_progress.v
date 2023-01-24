@@ -3,7 +3,7 @@
 
 From mathcomp Require Import ssreflect ssrfun ssrnat ssrbool eqtype seq.
 From Coq Require Import Program.Equality NArith Omega.
-From Wasm Require Export operations typing datatypes_properties typing opsem properties type_preservation.
+From Wasm Require Export operations typing datatypes_properties typing opsem properties (*type_preservation*).
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -19,7 +19,7 @@ Let function_closure := function_closure host_function.
 
 Let to_e_list : seq basic_instruction -> seq administrative_instruction := @to_e_list _.
 Let to_b_list : seq administrative_instruction -> seq basic_instruction := @to_b_list _.*)
-Let e_typing : store_record -> t_context -> seq administrative_instruction -> function_type -> Prop :=
+Let e_typing : store_record -> t_context -> seq administrative_instruction -> function_type -> Type :=
   @e_typing _.
 Let s_typing := @s_typing host_function.
 (*Let reduce_simple : seq administrative_instruction -> seq administrative_instruction -> Prop :=
@@ -41,7 +41,7 @@ Let host_state := host_state host_instance.
 Let host_application := @host_application host_function host_instance.
 
 Let reduce : host_state -> store_record -> frame -> seq administrative_instruction ->
-             host_state -> store_record -> frame -> seq administrative_instruction -> Prop
+             host_state -> store_record -> frame -> seq administrative_instruction -> Type
   := @reduce _ _.
 
 Definition terminal_form (es: seq administrative_instruction) :=
@@ -331,8 +331,7 @@ Proof.
   subst. simpl in *.
   destruct tc_table => //=.
   remove_bools_options.
-  destruct HST.
-  destruct H5.
+  destruct HST as [H4 [H5 H6]].
   rewrite -> List.Forall_forall in H5.
   assert (HIN1: List.In t0 s_tables).
   { by apply List.nth_error_In in Hoption0. }

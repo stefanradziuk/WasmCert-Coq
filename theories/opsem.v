@@ -22,7 +22,7 @@ Let store_record := store_record host_function.
 (*Let administrative_instruction := administrative_instruction host_function.*)
 Let host_state := host_state host_instance.
 
-Inductive reduce_simple : seq administrative_instruction -> seq administrative_instruction -> Prop :=
+Inductive reduce_simple : seq administrative_instruction -> seq administrative_instruction -> Type :=
 
 (** unop **)
   | rs_unop : forall v op t,
@@ -309,7 +309,7 @@ Inductive reduce : store_record -> list value -> list administrative_instruction
 *)
 
 Inductive reduce : host_state -> store_record -> frame -> list administrative_instruction ->
-                   host_state -> store_record -> frame -> list administrative_instruction -> Prop :=
+                   host_state -> store_record -> frame -> list administrative_instruction -> Type :=
   | r_simple :
       forall e e' s f hs,
         reduce_simple e e' ->
@@ -479,15 +479,18 @@ Inductive reduce : host_state -> store_record -> frame -> list administrative_in
         reduce hs s f0 [::AI_local n f es] hs' s' f0 [::AI_local n f' es']
   .
 
-Definition reduce_tuple hs_s_f_es hs'_s'_f'_es' : Prop :=
+Definition reduce_tuple hs_s_f_es hs'_s'_f'_es' : Type :=
   let '(hs, s, f, es) := hs_s_f_es in
   let '(hs', s', f', es') := hs'_s'_f'_es' in
   reduce hs s f es hs' s' f' es'.
       
+(*
+TODO: fix reduce_trans
 Definition reduce_trans :
     host_state * store_record * frame * seq administrative_instruction ->
-    host_state * store_record * frame * seq administrative_instruction -> Prop :=
+    host_state * store_record * frame * seq administrative_instruction -> Type :=
   Relations.Relation_Operators.clos_refl_trans _ reduce_tuple.
+*)
 
 End Host.
 

@@ -304,11 +304,9 @@ Definition init_mem (s : store_record) (inst : instance) (d_ind : N) (d : module
 Definition init_mems (s : store_record) (inst : instance) (d_inds : list N) (ds : list module_data) : store_record :=
   List.fold_left (fun s' '(d_ind, d) => init_mem s' inst d_ind d) (List.combine d_inds ds) s.
 
-Definition module_func_typing (c : t_context) (m : module_func) (tf : function_type) : Prop :=
+Definition module_func_typing (c : t_context) (m : module_func) (tf : function_type) : Type :=
   let '{| modfunc_type := Mk_typeidx i; modfunc_locals := t_locs; modfunc_body := b_es |} := m in
   let '(Tf tn tm) := tf in
-  i < List.length c.(tc_types_t) /\
-  List.nth i c.(tc_types_t) (Tf nil nil) == tf /\
   let c' := {|
     tc_types_t := c.(tc_types_t);
     tc_func_t := c.(tc_func_t);
@@ -319,7 +317,9 @@ Definition module_func_typing (c : t_context) (m : module_func) (tf : function_t
     tc_label := tm :: c.(tc_label);
     tc_return := Some tm;
   |} in
-  typing.be_typing c' b_es (Tf [::] tm).
+  prod (prod (i < List.length c.(tc_types_t))
+  (List.nth i c.(tc_types_t) (Tf nil nil) == tf))
+  (typing.be_typing c' b_es (Tf [::] tm)).
 
 Definition limit_typing (lim : limits) (k : N) : bool :=
   let '{| lim_min := min; lim_max := maxo |} := lim in

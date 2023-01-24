@@ -234,11 +234,11 @@ Qed.
 
 Lemma basic_concat: forall es1 es2,
     es_is_basic (es1 ++ es2) ->
-    es_is_basic es1 /\ es_is_basic es2.
+    (es_is_basic es1) ** (es_is_basic es2).
 Proof.
   induction es1 => //=.
-  move => es2 H. destruct H.
-  apply IHes1 in H0. destruct H0.
+  move => es2 H. destruct H as [H0 H1].
+  apply IHes1 in H1. destruct H1.
   by repeat split => //=.
 Qed.
 
@@ -308,7 +308,7 @@ Qed.
 
 Lemma b_e_elim: forall bes es,
     to_e_list bes = es ->
-    bes = to_b_list es /\ es_is_basic es.
+    (bes = to_b_list es) ** (es_is_basic es).
 Proof.
   induction bes; move => es H => //=.
   - by rewrite -H.
@@ -328,8 +328,10 @@ Proof.
   - by destruct es => //=.
   - destruct es => //=. simpl in H1. simpl in H2. destruct H2.
     inversion H1; subst.
-    inversion H; subst => //=.
-    f_equal. apply IHbes => //=.
+    inversion H1; subst => //=.
+    f_equal.
+    destruct e as [be ->] => //=.
+    apply IHbes => //=.
 Qed.
     
 Lemma to_e_list_injective: forall bes bes',
@@ -593,7 +595,7 @@ Let lfilled := @lfilled host_function.
 Let lfilledInd := @lfilledInd host_function.
 Let es_is_basic := @es_is_basic host_function.
 Let to_e_list := @to_e_list host_function.*)
-Let e_typing : store_record -> t_context -> seq administrative_instruction -> function_type -> Prop :=
+Let e_typing : store_record -> t_context -> seq administrative_instruction -> function_type -> Type :=
   @e_typing _.
 
 Lemma lfilled_collapse1: forall n lh vs es LI l,
@@ -902,7 +904,7 @@ Lemma bet_weakening_empty_1: forall C es ts t2s,
 Proof.
   move => C es ts t2s HType.
   assert (be_typing C es (Tf (ts ++ [::]) (ts ++ t2s))); first by apply bet_weakening.
-  by rewrite cats0 in H.
+  by rewrite cats0 in X.
 Qed.
 
 Lemma et_weakening_empty_1: forall s C es ts t2s,
@@ -911,7 +913,7 @@ Lemma et_weakening_empty_1: forall s C es ts t2s,
 Proof.
   move => s C es ts t2s HType.
   assert (e_typing s C es (Tf (ts ++ [::]) (ts ++ t2s))); first by apply ety_weakening.
-  by rewrite cats0 in H.
+  by rewrite cats0 in X.
 Qed.
 
 Lemma bet_weakening_empty_2: forall C es ts t1s,
@@ -920,7 +922,7 @@ Lemma bet_weakening_empty_2: forall C es ts t1s,
 Proof.
   move => C es ts t1s HType.
   assert (be_typing C es (Tf (ts ++ t1s) (ts ++ [::]))); first by apply bet_weakening.
-  by rewrite cats0 in H.
+  by rewrite cats0 in X.
 Qed.
 
 Lemma bet_weakening_empty_both: forall C es ts,
@@ -929,7 +931,7 @@ Lemma bet_weakening_empty_both: forall C es ts,
 Proof.
   move => C es ts HType.
   assert (be_typing C es (Tf (ts ++ [::]) (ts ++ [::]))); first by apply bet_weakening.
-  by rewrite cats0 in H.
+  by rewrite cats0 in X.
 Qed.
 
 (*
@@ -956,7 +958,7 @@ Lemma et_to_bet: forall s C es ts,
     be_typing C (to_b_list es) ts.
 Proof.
   move => s C es ts HBasic HType.
-  dependent induction HType; basic_inversion.
+  induction HType; basic_inversion.
   + replace (to_b_list (to_e_list bes)) with bes => //.
     by apply b_e_elim.
   + rewrite to_b_list_concat.
@@ -973,10 +975,10 @@ Hint Constructors be_typing : core.
 (** A helper tactic for proving [composition_typing_single]. **)
 Ltac auto_prove_bet:=
   repeat lazymatch goal with
-  | H: _ |- exists ts t1s t2s t3s, ?tn = ts ++ t1s /\ ?tm = ts ++ t2s /\
-                                   be_typing _ [::] (Tf _ _) /\ _ =>
+  | H: _ |- {ts & {t1s & {t2s & {t3s & (?tn = ts ++ t1s) ** (?tm = ts ++ t2s) **
+                                   (be_typing _ [::] (Tf _ _)) ** _}}}} =>
     try exists [::], tn, tm, tn; try eauto
-  | H: _ |- _ /\ _ =>
+  | H: _ |- _ ** _ =>
     split => //=; try eauto
   | H: _ |- be_typing _ [::] (Tf ?es ?es) =>
     apply bet_weakening_empty_both; try by []
@@ -984,10 +986,10 @@ Ltac auto_prove_bet:=
 
 Lemma composition_typing_single: forall C es1 e t1s t2s,
     be_typing C (es1 ++ [::e]) (Tf t1s t2s) ->
-    exists ts t1s' t2s' t3s, t1s = ts ++ t1s' /\
-                             t2s = ts ++ t2s' /\
-                             be_typing C es1 (Tf t1s' t3s) /\
-                             be_typing C [::e] (Tf t3s t2s').
+    {ts & {t1s' & {t2s' & {t3s & (t1s = ts ++ t1s') **
+                             (t2s = ts ++ t2s') **
+                             (be_typing C es1 (Tf t1s' t3s)) **
+                             (be_typing C [::e] (Tf t3s t2s'))}}}}.
 Proof.
   move => C es1 e t1s t2s HType.
   gen_ind_subst HType; extract_listn; auto_prove_bet.
@@ -995,18 +997,18 @@ Proof.
   + by destruct es1 => //=.
   + apply concat_cancel_last in H1. destruct H1. subst.
     by exists [::], t1s0, t2s0, t2s.
-  + edestruct IHHType; eauto.
-    destruct H as [t1s' [t2s' [t3s' [H1 [H2 [H3 H4]]]]]]. subst.
-    exists (ts ++ x), t1s', t2s', t3s'.
+  + edestruct IHHType as [ts' [t1s' [t2s' [t3s' H]]]]; eauto.
+    destruct H as [->[->[??]]]. 
+    exists (ts ++ ts'), t1s', t2s', t3s'.
     by repeat split => //=; rewrite -catA.
 Qed.
 
 Lemma composition_typing: forall C es1 es2 t1s t2s,
     be_typing C (es1 ++ es2) (Tf t1s t2s) ->
-    exists ts t1s' t2s' t3s, t1s = ts ++ t1s' /\
-                             t2s = ts ++ t2s' /\
-                             be_typing C es1 (Tf t1s' t3s) /\
-                             be_typing C es2 (Tf t3s t2s').
+    {ts & {t1s' & {t2s' & {t3s & (t1s = ts ++ t1s') **
+                             (t2s = ts ++ t2s') **
+                             (be_typing C es1 (Tf t1s' t3s)) **
+                             (be_typing C es2 (Tf t3s t2s'))}}}}.
 Proof.
   move => C es1 es2.
   remember (rev es2) as es2'.
@@ -1034,7 +1036,7 @@ Proof.
       eapply bet_composition; eauto.
       by apply bet_weakening.
 Qed.
-
+(*
 Lemma e_composition_typing_single: forall s C es1 e t1s t2s,
     e_typing s C (es1 ++ [::e]) (Tf t1s t2s) ->
     exists ts t1s' t2s' t3s, t1s = ts ++ t1s' /\
@@ -1113,7 +1115,7 @@ Proof.
       eapply ety_composition; eauto.
       by apply ety_weakening.
 Qed.
-
+*)
 Lemma bet_composition': forall C es1 es2 t1s t2s t3s,
     be_typing C es1 (Tf t1s t2s) ->
     be_typing C es2 (Tf t2s t3s) ->
@@ -1152,6 +1154,7 @@ Proof.
   by eapply bet_composition'; eauto.
 Qed.
 
+(*
 Lemma et_composition': forall s C es1 es2 t1s t2s t3s,
     e_typing s C es1 (Tf t1s t2s) ->
     e_typing s C es2 (Tf t2s t3s) ->
@@ -1180,7 +1183,7 @@ Proof.
     by apply HType1.
     by apply ety_weakening.
 Qed.
-
+*)
 End composition_typing_proofs.
 
 End Host.

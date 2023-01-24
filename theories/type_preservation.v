@@ -20,7 +20,7 @@ Let function_closure := function_closure host_function.
 
 Let to_e_list : seq basic_instruction -> seq administrative_instruction := @to_e_list _.
 Let to_b_list : seq administrative_instruction -> seq basic_instruction := @to_b_list _.*)
-Let e_typing : store_record -> t_context -> seq administrative_instruction -> function_type -> Prop :=
+Let e_typing : store_record -> t_context -> seq administrative_instruction -> function_type -> Type :=
   @e_typing _.
 Let inst_typing : store_record -> instance -> t_context -> bool := @inst_typing _.
 (*Let reduce_simple : seq administrative_instruction -> seq administrative_instruction -> Prop :=
@@ -38,7 +38,7 @@ Variable host_instance : host.
 Let host_state := host_state host_instance.
 
 Let reduce : host_state -> store_record -> frame -> seq administrative_instruction ->
-             host_state -> store_record -> frame -> seq administrative_instruction -> Prop
+             host_state -> store_record -> frame -> seq administrative_instruction -> Type
   := @reduce _ _.
 
 Let s_globals : store_record -> seq global := @s_globals _.
@@ -58,7 +58,7 @@ Ltac b_to_a_revert :=
 
 Lemma b_e_elim: forall bes es,
     to_e_list bes = es ->
-    bes = to_b_list es /\ es_is_basic es.
+    (bes = to_b_list es) ** (es_is_basic es).
 Proof.
   by apply properties.b_e_elim.
 Qed.
@@ -262,9 +262,9 @@ Qed.
 
 Lemma If_typing: forall C t1s t2s e1s e2s ts ts',
     be_typing C [::BI_if (Tf t1s t2s) e1s e2s] (Tf ts ts') ->
-    exists ts0, ts = ts0 ++ t1s ++ [::T_i32] /\ ts' = ts0 ++ t2s /\
-                be_typing (upd_label C ([:: t2s] ++ tc_label C)) e1s (Tf t1s t2s) /\
-                be_typing (upd_label C ([:: t2s] ++ tc_label C)) e2s (Tf t1s t2s).
+    { ts0 & (ts = ts0 ++ t1s ++ [::T_i32]) ** (ts' = ts0 ++ t2s) **
+                (be_typing (upd_label C ([:: t2s] ++ tc_label C)) e1s (Tf t1s t2s)) **
+                (be_typing (upd_label C ([:: t2s] ++ tc_label C)) e2s (Tf t1s t2s))}.
 Proof.
   move => C t1s t2s e1s e2s ts ts' HType.
   gen_ind_subst HType.
@@ -272,13 +272,12 @@ Proof.
   - apply extract_list1 in H1; destruct H1; subst.
     apply empty_typing in HType1. subst.
     by eapply IHHType2.
-  - edestruct IHHType => //=; subst.
-    destruct H as [H1 [H2 [H3 H4]]]. subst.
-    exists (ts ++ x).
+  - edestruct IHHType as [ts' [t1s' [t2s' [??]]]] => //=; subst.
+    exists (ts ++ ts').
     repeat rewrite -catA.
     repeat split => //=.
 Qed.
-
+(*
 Lemma Br_if_typing: forall C ts1 ts2 i,
     be_typing C [::BI_br_if i] (Tf ts1 ts2) ->
     exists ts ts', ts2 = ts ++ ts' /\ ts1 = ts2 ++ [::T_i32] /\ i < length (tc_label C) /\ plop2 C i ts'.
@@ -357,7 +356,7 @@ Qed.
     to factorize into a tactic, the following proofs are independent of each other
     and should therefore be easily refactorable.
 *)
-
+*)
 Ltac invert_be_typing:=
   repeat lazymatch goal with
   | H: (?es ++ [::?e])%list = [::_] |- _ =>
@@ -416,7 +415,7 @@ Ltac invert_be_typing:=
     let H3 := fresh "H3" in
     let H4 := fresh "H4" in
     apply If_typing in H; destruct H as [ts [H1 [H2 [H3 H4]]]]; subst
-  | H: be_typing _ [::BI_br_if _] _ |- _ =>
+ (* | H: be_typing _ [::BI_br_if _] _ |- _ =>
     let ts := fresh "ts" in
     let ts' := fresh "ts'" in
     let H1 := fresh "H1" in
@@ -437,7 +436,7 @@ Ltac invert_be_typing:=
     let H2 := fresh "H2" in
     let H3 := fresh "H3" in
     let H4 := fresh "H4" in
-    apply Tee_local_typing in H; destruct H as [ts [t [H1 [H2 [H3 H4]]]]]; subst
+    apply Tee_local_typing in H; destruct H as [ts [t [H1 [H2 [H3 H4]]]]]; subst*)
   | H: be_typing _ (_ ++ _) _ |- _ =>
     let ts1 := fresh "ts1" in
     let ts2 := fresh "ts2" in

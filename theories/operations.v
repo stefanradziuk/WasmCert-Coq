@@ -11,6 +11,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Notation " P ** Q " := (prod P Q) (at level 5, right associativity).
+
 Section Host.
 
 Variable host_function : eqType.
@@ -501,14 +503,14 @@ Definition to_b_single (e: administrative_instruction) : basic_instruction :=
 Definition to_b_list (es: seq administrative_instruction) : seq basic_instruction :=
   map to_b_single es.
 
-Definition e_is_basic (e: administrative_instruction) :=
-  exists be, e = AI_basic be.
+Definition e_is_basic (e: administrative_instruction): Type :=
+  { be & e = AI_basic be }.
 
-Fixpoint es_is_basic (es: seq administrative_instruction) :=
+Fixpoint es_is_basic (es: seq administrative_instruction) : Type :=
   match es with
   | [::] => True
   | e :: es' =>
-    e_is_basic e /\ es_is_basic es'
+    (e_is_basic e) ** (es_is_basic es')
   end.
 
 (** [v_to_e_list]: 

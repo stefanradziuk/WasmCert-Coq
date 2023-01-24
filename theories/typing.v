@@ -142,7 +142,7 @@ Inductive relop_type_agree: value_type -> relop -> Prop :=
   | Relop_f64_agree: forall op, relop_type_agree T_f64 (Relop_f op)
   .
   
-Inductive be_typing : t_context -> seq basic_instruction -> function_type -> Prop :=
+Inductive be_typing : t_context -> seq basic_instruction -> function_type -> Type :=
 (** Corresponding to section 3.3 **)
 | bet_const : forall C v, be_typing C [::BI_const v] (Tf [::] [::typeof v])
 | bet_unop : forall C t op,
@@ -490,7 +490,7 @@ Print Func_native.
   I think the main use of this is for typing the Callcl (now renamed to Invoke)
     instructions.
  *)
-Inductive cl_typing : store_record -> function_closure -> function_type -> Prop :=
+Inductive cl_typing : store_record -> function_closure -> function_type -> Type :=
   | cl_typing_native : forall i s C C' ts t1s t2s es tf,
     inst_typing s i C ->
     tf = Tf t1s t2s ->
@@ -506,7 +506,7 @@ Inductive cl_typing : store_record -> function_closure -> function_type -> Prop 
     some of them.
 *)
 
-Inductive e_typing : store_record -> t_context -> seq administrative_instruction -> function_type -> Prop :=
+Inductive e_typing : store_record -> t_context -> seq administrative_instruction -> function_type -> Type :=
 | ety_a : forall s C bes tf,
   be_typing C bes tf -> e_typing s C (to_e_list bes) tf
 | ety_composition : forall s C es e t1s t2s t3s,
@@ -544,7 +544,7 @@ with s_typing : store_record -> option (seq value_type) -> frame -> seq administ
 Scheme e_typing_ind' := Induction for e_typing Sort Prop
   with s_typing_ind' := Induction for s_typing Sort Prop.
 
-Definition cl_typing_self (s : store_record) (fc : function_closure) : Prop :=
+Definition cl_typing_self (s : store_record) (fc : function_closure) : Type :=
   cl_typing s fc (cl_type fc).
 
 Lemma cl_typing_unique : forall s cl tf, cl_typing s cl tf -> tf = cl_type cl.
@@ -554,8 +554,8 @@ Proof.
   - move => f h H; by inversion H.
 Qed.
 
-Definition cl_type_check_single (s:store_record) (f:function_closure):=
-  exists tf, cl_typing s f tf.
+Definition cl_type_check_single (s:store_record) (f:function_closure) : Type :=
+  {tf & cl_typing s f tf}.
 
 Definition tabcl_agree (s : store_record) (tcl_index : option nat) : Prop :=
   match tcl_index with
@@ -584,15 +584,15 @@ Definition mem_agree (m : memory) : Prop :=
   | Some n => N.le (mem_size m) n
   end.
 
-Definition store_typing (s : store_record) : Prop :=
+Definition store_typing (s : store_record) : Type :=
   match s with
   | Build_store_record fs tclss mss gs =>
-    List.Forall (cl_type_check_single s) fs /\
-    List.Forall (tab_agree s) tclss /\
-    List.Forall mem_agree mss
+    (common.TProp.Forall (cl_type_check_single s) fs) **
+    (List.Forall (tab_agree s) tclss) **
+    (List.Forall mem_agree mss)
   end.
 
-Inductive config_typing : store_record -> frame -> seq administrative_instruction -> seq value_type -> Prop :=
+Inductive config_typing : store_record -> frame -> seq administrative_instruction -> seq value_type -> Type :=
 | mk_config_typing :
   forall s f es ts,
   store_typing s ->
