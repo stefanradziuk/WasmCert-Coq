@@ -1056,6 +1056,7 @@ Proof.
     by exists ts, ts2.
 Qed.
 
+(* XXX the remainder of this file is commented out for now just so we can use Label_typing
 (*
   Looking at what we want to prove in the Lfilled_break case, it might be tempting to
     prove the following:
@@ -3378,5 +3379,6 @@ Proof.
   fold_upd_context.
   by eapply t_preservation_e; eauto.
 Qed.
+*)
 
 End Host.

@@ -3,7 +3,7 @@
 
 From mathcomp Require Import ssreflect ssrfun ssrnat ssrbool eqtype seq.
 From Coq Require Import Program.Equality NArith Omega.
-From Wasm Require Export operations typing datatypes_properties typing opsem properties (*type_preservation*).
+From Wasm Require Export operations typing datatypes_properties typing opsem properties type_preservation.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -544,15 +544,21 @@ Ltac solve_progress_cont cont :=
 Ltac solve_progress :=
   solve_progress_cont ltac:(fail).
 
+(* XXX adadpted from Coq.Init.Logic -- is there no stdlib alternative? *)
+(* XXX this breaks invert_typeof_vcs (and possibly more rewriting) -- alternative approach? *)
+Inductive eqT (A:Type) (x:A) : A -> Type :=
+    eqT_refl : (eqT x x).
+Notation "x =T y" := (eqT x y) (at level 80) : type_scope.
+
 Lemma t_progress_be: forall C bes ts1 ts2 vcs lab ret s f hs,
     store_typing s ->
     inst_typing s f.(f_inst) C ->
     be_typing (upd_label (upd_local_return C (map typeof f.(f_locs)) ret) lab) bes (Tf ts1 ts2) ->
-    map typeof vcs = ts1 ->
+    map typeof vcs =T ts1 ->
     not_lf_br (to_e_list bes) 0 ->
     not_lf_return (to_e_list bes) 0 ->
-    const_list (to_e_list bes) \/
-    exists s' f' es' hs', reduce hs s f (v_to_e_list vcs ++ to_e_list bes) hs' s' f' es'.
+    const_list (to_e_list bes) +
+    {s' & {f' & {es' & {hs' & reduce hs s f (v_to_e_list vcs ++ to_e_list bes) hs' s' f' es'}}}}.
 Proof.
   move => C bes ts1 ts2 vcs lab ret s f hs HST HIT HType HConstType HNBI_br HNRet.
   generalize dependent vcs.
