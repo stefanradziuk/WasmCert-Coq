@@ -532,7 +532,7 @@ Inductive e_typing : store_record -> t_context -> seq administrative_instruction
   length ts = n ->
   e_typing s C [::AI_label n e0s es] (Tf [::] t2s)
 
-with s_typing : store_record -> option (seq value_type) -> frame -> seq administrative_instruction -> seq value_type -> Prop :=
+with s_typing : store_record -> option (seq value_type) -> frame -> seq administrative_instruction -> seq value_type -> Type :=
 | mk_s_typing : forall s f es rs ts C C0,
   frame_typing s f C0 ->
   C = upd_return C0 rs ->
@@ -541,8 +541,8 @@ with s_typing : store_record -> option (seq value_type) -> frame -> seq administ
   s_typing s rs f es ts
 .
 
-Scheme e_typing_ind' := Induction for e_typing Sort Prop
-  with s_typing_ind' := Induction for s_typing Sort Prop.
+Scheme e_typing_ind' := Induction for e_typing Sort Type
+  with s_typing_ind' := Induction for s_typing Sort Type.
 
 Definition cl_typing_self (s : store_record) (fc : function_closure) : Type :=
   cl_typing s fc (cl_type fc).

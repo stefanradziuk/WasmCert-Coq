@@ -1056,7 +1056,6 @@ Proof.
     by exists ts, ts2.
 Qed.
 
-(* XXX the remainder of this file is commented out for now just so we can use Label_typing
 (*
   Looking at what we want to prove in the Lfilled_break case, it might be tempting to
     prove the following:
@@ -1092,6 +1091,7 @@ Lemma Lfilled_break_typing: forall n lh vs LI ts s C t2s,
     wanted is a special case of:
 *)
 
+(* XXX commented out temporarily
 Lemma Lfilled_break_typing: forall n m k lh vs LI ts s C t2s tss,
     e_typing s (upd_label C (tss ++ [::ts] ++ tc_label C)) LI (Tf [::] t2s) ->
     const_list vs ->
@@ -1170,6 +1170,7 @@ Proof.
     { rewrite Heqtss'. rewrite cat1s. simpl. by rewrite addn1. }
     by lias.
 Qed.
+*)
 
 (*
   And yes, the above observation was obviously the result of some futile attempt
@@ -1237,6 +1238,7 @@ Proof.
 
  *)
 
+(* XXX
 Lemma Local_typing: forall s C n f es t1s t2s,
     e_typing s C [::AI_local n f es] (Tf t1s t2s) ->
     exists ts, t2s = t1s ++ ts /\
@@ -1269,24 +1271,26 @@ Proof.
     move => t2s t1s HTf. inversion HTf. subst.
     by exists t2s.
 Qed.
+*)
 
 Lemma Return_typing: forall C t1s t2s,
     be_typing C [::BI_return] (Tf t1s t2s) ->
-    exists ts ts', t1s = ts' ++ ts /\
-                   tc_return C = Some ts.
+    {ts & {ts' & t1s = ts' ++ ts /\ tc_return C = Some ts}}.
 Proof.
   move => C t1s t2s HType.
   dependent induction HType => //=.
   - by exists ts, t1s0.
   - invert_be_typing.
     by eapply IHHType2 => //=.
-  - edestruct IHHType => //=.
-    destruct H as [ts' [H1 H2]]. subst.
-    exists x, (ts ++ ts').
+  - edestruct IHHType as [ts' IHHType'] => //=.
+    destruct IHHType' as [ts'' [H1 H2]]. subst.
+    exists ts', (ts ++ ts'').
     split => //=.
     by rewrite -catA.
 Qed.
 
+(* XXX the remainder of this file is commented out for now just so we can use Label_typing
+and Return_typing
 (*
   Similarly, Local does not involve in induction either. So what we want to prove
     is also slightly different from what we desire. However, this one is easier
@@ -1798,6 +1802,7 @@ Proof.
     exists (ts ++ x).
     by repeat rewrite -catA.
 Qed.
+*)
 
 Lemma Store_typing: forall C t a off tp t1s t2s,
     be_typing C [::BI_store t tp a off] (Tf t1s t2s) ->
@@ -1825,6 +1830,7 @@ Proof.
     by repeat rewrite -catA.
 Qed.
 
+(*
 Lemma Grow_memory_typing: forall C t1s t2s,
     be_typing C [::BI_grow_memory] (Tf t1s t2s) ->
     exists ts, tc_memory C <> nil /\ t2s = t1s /\ t1s = ts ++ [::T_i32].
@@ -1857,6 +1863,7 @@ Proof.
   apply H in HN. unfold cl_type_check_single in HN. destruct HN.
   by inversion H1; subst.
 Qed.
+*)
 
 Lemma inst_t_context_local_empty: forall s i C,
     inst_typing s i C ->
@@ -1880,6 +1887,7 @@ Proof.
   by destruct tc_local; destruct tc_label.
 Qed.
 
+(*
 Lemma global_type_reference: forall s i j C v t,
     inst_typing s i C ->
     sglob_val s i j = Some v ->

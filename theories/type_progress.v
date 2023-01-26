@@ -45,7 +45,7 @@ Let reduce : host_state -> store_record -> frame -> seq administrative_instructi
   := @reduce _ _.
 
 Definition terminal_form (es: seq administrative_instruction) :=
-  const_list es \/ es = [::AI_trap].
+  {const_list es} + {es = [::AI_trap]}.
 
 Lemma reduce_trap_left: forall vs,
     const_list vs ->
@@ -148,13 +148,13 @@ Lemma terminal_form_v_e: forall vs es,
 Proof.
   move => vs es HConst HTerm.
   unfold terminal_form in HTerm.
-  destruct HTerm.
+  destruct HTerm as [HTerm|HTerm].
   - unfold terminal_form. left.
-    apply const_list_split in H. by destruct H.
+    apply const_list_split in HTerm. by destruct HTerm.
   - destruct vs => //=.
-    + simpl in H. subst. unfold terminal_form. by right.
+    + simpl in HTerm. subst. unfold terminal_form. by right.
     + destruct vs => //=. destruct es => //=.
-      simpl in H. inversion H. by subst.
+      simpl in HTerm. inversion HTerm. by subst.
 Qed.
 
 Lemma terminal_trap: terminal_form [::AI_trap].
@@ -915,10 +915,13 @@ Traceback:
  *)
 
 Definition br_reduce (es: seq administrative_instruction) :=
-  exists n lh, lfilled n lh [::AI_basic (BI_br n)] es.
+  { n & {lh & lfilled n lh [::AI_basic (BI_br n)] es}}.
 
 Definition return_reduce (es: seq administrative_instruction) :=
-  exists n lh, lfilled n lh [::AI_basic BI_return] es.
+  {n & {lh & lfilled n lh [::AI_basic BI_return] es}}.
+
+(* XXX decidable needs Prop -- how to handle this? *)
+Locate decidable.
 
 (** [br_reduce] is decidable. **)
 Lemma br_reduce_decidable : forall es, decidable (br_reduce es).
@@ -993,6 +996,7 @@ Proof.
     by simpl in R.
 Qed.
 
+(* TODO need sigma? *)
 Lemma br_reduce_extract_vs: forall n k lh es s C ts ts2,
     lfilled n lh [::AI_basic (BI_br (n + k))] es ->
     e_typing s C es (Tf [::] ts2) ->
@@ -1048,6 +1052,7 @@ Proof.
     by apply HLength.
 Qed.
 
+(* TODO need sigma? *)
 Lemma return_reduce_extract_vs: forall n lh es s C ts ts2,
     lfilled n lh [::AI_basic BI_return] es ->
     e_typing s C es (Tf [::] ts2) ->
@@ -1097,6 +1102,7 @@ Proof.
     by apply HLength.
 Qed.
 
+(* TODO need sigma? *)
 Lemma le_add: forall n m,
     n <= m ->
     exists k, m = n+k.
@@ -1139,10 +1145,11 @@ Proof.
   apply le_add in Inf.
   destruct Inf as [j Inf]. subst.
   clear H3.
-  eapply br_reduce_label_length in H1; eauto.
-  simpl in H1.
+  (* TODO why was this not HLF before? was there a dupe? *)
+  eapply br_reduce_label_length in HLF; eauto.
+  simpl in HLF.
   assert (E : tc_label C1 = [::]); first by eapply inst_t_context_label_empty; eauto.
-  by rewrite E in H1.
+  by rewrite E in HLF.
 Qed.
 
 Lemma s_typing_lf_return: forall s f es ts,
@@ -1152,7 +1159,8 @@ Proof.
   unfold not_lf_return.
   move => s f es ts HType n lh HContra.
   inversion HType; subst.
-  by eapply return_reduce_return_some in H1; eauto.
+  (* TODO naming *)
+  by eapply return_reduce_return_some in X; eauto.
 Qed.
 
 Axiom host_application_exists: forall hs s tf hf vcs,
@@ -1167,8 +1175,8 @@ Lemma t_progress_e: forall s C C' f vcs es tf ts1 ts2 lab ret hs,
     store_typing s ->
     (forall n lh k, lfilled n lh [::AI_basic (BI_br k)] es -> k < n) ->
     (forall n, not_lf_return es n) ->
-    terminal_form (v_to_e_list vcs ++ es) \/
-    exists s' f' es' hs', reduce hs s f (v_to_e_list vcs ++ es) hs' s' f' es'.
+    terminal_form (v_to_e_list vcs ++ es) +
+    {s' & {f' & {es' & {hs' & reduce hs s f (v_to_e_list vcs ++ es) hs' s' f' es'}}}}.
 Proof.
   (* e_typing *)
   move => s C C' f vcs es tf ts1 ts2 lab ret hs HType.
@@ -1184,15 +1192,15 @@ Proof.
               store_typing s ->
               (forall n lh k, lfilled n lh [::AI_basic (BI_br k)] es -> k < n) ->
               (forall n, not_lf_return es n) ->
-              terminal_form (v_to_e_list vcs ++ es) \/
-              exists s' f' es' hs', reduce hs s f (v_to_e_list vcs ++ es) hs' s' f' es')
+              terminal_form (v_to_e_list vcs ++ es) +
+              {s' & {f' & {es' & {hs' & reduce hs s f (v_to_e_list vcs ++ es) hs' s' f' es'}}}})
     (P0 := fun s rs f es ts (_ : s_typing s rs f es ts) => forall hs,
               store_typing s ->
               (forall n lh k, lfilled n lh [::AI_basic (BI_br k)] es -> k < n) ->
               (forall n, not_lf_return es n) ->
-              (const_list es /\ length es = length ts) \/
-              es = [::AI_trap] \/
-              exists s' f' es' hs', reduce hs s f es hs' s' f' es'); clear HType s C es tf.
+              ((const_list es) ** (length es = length ts)) +
+              (es = [::AI_trap]) +
+              {s' & {f' & {es' & {hs' & reduce hs s f es hs' s' f' es'}}}}); clear HType s C es tf.
   (* The previous variables s/C/es/tf still lingers here so we need to clear *)
   (* UPD (23 Sep 2020): with the new wrapper approach to deal with host, we can no longer
      clear everything like we did originally: this is because the clear tactic also 
@@ -1225,9 +1233,10 @@ Proof.
     { move => n.
       eapply nlfret_right. by apply HNRet. }
     + (* Terminal *)
-      unfold terminal_form in H. destruct H.
+      (* TODO naming *)
+      unfold terminal_form in t. destruct t as [HC|HT].
       * (* Const *)
-        apply const_list_split in H. destruct H as [HC1 HC2].
+        apply const_list_split in HC. destruct HC as [HC1 HC2].
         apply et_to_bet in HType1; last by apply const_list_is_basic.
         apply const_es_exists in HC2.
         destruct HC2 as [esv HC2]. subst.
@@ -1245,23 +1254,25 @@ Proof.
           instantiate (1 := v_to_e_list esv); first by apply v_to_e_is_const_list.
           by apply HNRet. }
         -- (* Terminal *)
-          unfold terminal_form in H. destruct H.
+          (* TODO naming *)
+          unfold terminal_form in t. destruct t.
           ++ left. unfold terminal_form. left.
-             rewrite -v_to_e_cat in H.
+             rewrite -v_to_e_cat in i.
              by rewrite catA.
-          ++ apply extract_list1 in H. destruct H.
-             rewrite -v_to_e_cat in H.
+          ++ apply extract_list1 in e0. destruct e0 as [Hemp HT].
+             rewrite -v_to_e_cat in Hemp.
              destruct vcs => //=.
              destruct esv => //=.
              left. subst. by apply terminal_trap.
         -- (* reduce *)
-          rewrite -v_to_e_cat in H.
-          rewrite -catA in H.
+          (* TODO naming *)
+          rewrite -v_to_e_cat in s0.
+          rewrite -catA in s0.
           right.
-          by eapply H.
+          by eapply s0.
       * (* AI_trap *)
         destruct vcs => //=; destruct es => //=; destruct es => //=.
-        simpl in H. inversion H. subst.
+        simpl in HT. inversion HT. subst.
         right.
         exists s, f, [::AI_trap], hs.
         apply r_simple.
@@ -1270,7 +1281,8 @@ Proof.
         apply/lfilledP.
         by apply LfilledBase => //=; apply v_to_e_is_const_list.
     + (* reduce *)
-      destruct H as [s' [f' [es' [hs' HReduce]]]].
+      (* TODO naming *)
+      destruct s0 as [s' [f' [es' [hs' HReduce]]]].
       right.
       exists s', f', (es' ++ [::e]), hs'.
       eapply r_label; eauto; try apply/lfilledP.
@@ -1294,8 +1306,9 @@ Proof.
     rewrite Evcs. rewrite - v_to_e_cat.
     edestruct IHHType; eauto.
     + (* Terminal *)
-      unfold terminal_form in H.
-      destruct H => //=.
+      (* TODO naming *)
+      unfold terminal_form in t.
+      destruct t as [H|H] => //=.
       * (* Const *)
         left. unfold terminal_form. left.
         rewrite -catA. apply const_list_concat => //.
@@ -1315,7 +1328,8 @@ Proof.
            apply reduce_trap_left => //.
            by apply v_to_e_is_const_list.
     + (* reduce *)
-      destruct H as [s' [f' [es' [hs'' HReduce]]]].
+      (* TODO naming *)
+      destruct s0 as [s' [f' [es' [hs'' HReduce]]]].
       right.
       exists s', f', (v_to_e_list (take (size ts) vcs) ++ es'), hs''.
       rewrite -catA.
