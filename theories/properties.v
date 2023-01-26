@@ -295,15 +295,15 @@ Qed.
   
 Lemma const_es_exists: forall es,
     const_list es ->
-    exists vs, es = v_to_e_list vs.
+    {vs & es = v_to_e_list vs}.
 Proof.
-  induction es => //=.
+  induction es as [|a es IHes] => //=.
   - by exists [::].
   - move => HConst.
     move/andP in HConst. destruct HConst.
     destruct a => //=. destruct b => //=.
-    edestruct IHes => //=.
-    exists (v :: x). simpl. by rewrite H1.
+    edestruct IHes as [vs IHes'] => //=.
+    exists (v :: vs). simpl. by rewrite IHes'.
 Qed.
 
 Lemma b_e_elim: forall bes es,
