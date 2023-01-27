@@ -915,18 +915,38 @@ Traceback:
  *)
 
 Definition br_reduce (es: seq administrative_instruction) :=
-  { n & {lh & lfilled n lh [::AI_basic (BI_br n)] es}}.
+  exists n lh, lfilled n lh [::AI_basic (BI_br n)] es.
 
 Definition return_reduce (es: seq administrative_instruction) :=
+  exists n lh, lfilled n lh [::AI_basic BI_return] es.
+
+Definition br_reduceT (es: seq administrative_instruction) :=
+  {n & {lh & lfilled n lh [::AI_basic (BI_br n)] es}}.
+
+Definition return_reduceT (es: seq administrative_instruction) :=
   {n & {lh & lfilled n lh [::AI_basic BI_return] es}}.
 
 (* XXX decidable needs Prop -- how to handle this? *)
-Locate decidable.
+
+Check pickable_decidable.
+Check br_reduce.
+
+Check pickable.
+Check pickableT.
+Check forall es, br_reduce es.
 
 (** [br_reduce] is decidable. **)
 Lemma br_reduce_decidable : forall es, decidable (br_reduce es).
 Proof.
   move=> es. apply: pickable_decidable. apply: pickable2_weaken.
+  apply lfilled_pickable_rec_gen => // es' lh lh' n.
+  by apply: lfilled_decidable_base.
+Defined.
+
+(** [br_reduce] is decidable. **)
+Lemma br_reduce_decidableT : forall es, decidableT (br_reduceT es).
+Proof.
+  move=> es. apply: pickable_decidable_T. apply: pickable2_weaken_T.
   apply lfilled_pickable_rec_gen => // es' lh lh' n.
   by apply: lfilled_decidable_base.
 Defined.

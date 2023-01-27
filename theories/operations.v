@@ -11,7 +11,17 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import Coq.Init.Datatypes.
+
+(* Basic logic ops for Type *)
+(* XXX is there something similar in stdlib? Search didn't return anything *)
+Definition notT (T : Type) : Type := T -> Empty_set.
+Definition decidableT (T : Type) : Type := T + notT T.
+Definition iffT (A B : Type) : Type := prod (A -> B) (B -> A).
+
+(* XXX do the extra spaces here make a difference? *)
 Notation " P ** Q " := (prod P Q) (at level 5, right associativity).
+Notation "P <=> Q" := (iffT P Q) (at level 95, right associativity).
 
 Section Host.
 
@@ -599,7 +609,7 @@ Fixpoint lfill (k : nat) (lh : lholed) (es : seq administrative_instruction) : o
 Definition lfilled (k : nat) (lh : lholed) (es : seq administrative_instruction) (es' : seq administrative_instruction) : bool :=
   if lfill k lh es is Some es'' then es' == es'' else false.
 
-Inductive lfilledInd : nat -> lholed -> seq administrative_instruction -> seq administrative_instruction -> Prop :=
+Inductive lfilledInd : nat -> lholed -> seq administrative_instruction -> seq administrative_instruction -> Type :=
 | LfilledBase: forall vs es es',
     const_list vs ->
     lfilledInd 0 (LH_base vs es') es (vs ++ es ++ es')
@@ -609,7 +619,7 @@ Inductive lfilledInd : nat -> lholed -> seq administrative_instruction -> seq ad
     lfilledInd (k.+1) (LH_rec vs n es' lh' es'') es (vs ++ [ :: (AI_label n es' LI) ] ++ es'').
 
 Lemma lfilled_Ind_Equivalent: forall k lh es LI,
-    lfilled k lh es LI <-> lfilledInd k lh es LI.
+    lfilled k lh es LI <=> lfilledInd k lh es LI.
 Proof.
   move => k. split.
   - move: lh es LI. induction k; move => lh es LI HFix.
@@ -625,14 +635,17 @@ Proof.
           apply IHk. unfold lfilled; first by rewrite HLF.
           symmetry. move: HFix. by apply/eqseqP. }
         }
-  - move => HLF. induction HLF.
-    + unfold lfilled. unfold lfill. by rewrite H.
-    + unfold lfilled. unfold lfill. rewrite H. fold lfill.
+  - move => HLF. induction HLF as [??? Hconst|???????? Hconst HLF IHHLF].
+    + unfold lfilled. unfold lfill. by rewrite Hconst.
+    + unfold lfilled. unfold lfill. rewrite Hconst. fold lfill.
       unfold lfilled in IHHLF. destruct (lfill k lh' es) => //=.
       * replace LI with l => //=.
         symmetry. by apply/eqseqP.
 Qed.
 
+(* XXX reflect needs a Prop
+ * does it still make sense with lfilledInd as Type?
+ *)
 Lemma lfilledP: forall k lh es LI,
     reflect (lfilledInd k lh es LI) (lfilled k lh es LI).
 Proof.

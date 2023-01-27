@@ -828,10 +828,10 @@ Defined.
 
 Definition lfilled_pickable_rec_gen : forall fes,
   (forall es' lh lh' n0, decidable (lfilled 0 lh (fes n0 lh') es')) ->
-  forall es', pickable2 (fun n lh => lfilled n lh (fes n lh) es').
+  forall es', pickableT2 (fun n lh => lfilled n lh (fes n lh) es').
 Proof.
   move=> fes D0 es'.
-  apply: (@pickable2_equiv _ _ (fun n lh => lfilledInd n lh (fes (0+n) lh) es')).
+  apply: (@pickableT2_equiv _ _ (fun n lh => lfilledInd n lh (fes (0+n) lh) es')).
   { move=> n lh. by split; apply lfilled_Ind_Equivalent. }
   apply: lfilledInd_pickable_rec_gen => es'' lh lh' n0.
   by apply: decidable_equiv; first by apply: lfilled_Ind_Equivalent.

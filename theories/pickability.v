@@ -60,11 +60,34 @@ Definition pickable4 A1 A2 A3 A4 (P : A1 -> A2 -> A3 -> A4 -> Prop) :=
 Definition pickable5 A1 A2 A3 A4 A5 (P : A1 -> A2 -> A3 -> A4 -> A5 -> Prop) :=
   { x | let '(x1, x2, x3, x4, x5) := x in P x1 x2 x3 x4 x5 } + { ~ exists x1 x2 x3 x4 x5, P x1 x2 x3 x4 x5 }.
 
+
+Locate "+".
+Check sumor.
+
+(* Type version of pickable *)
+(* TODO why does _ + _ not work here instead of sum? *)
+Definition pickableT A (P : A -> Type) :=
+  sum { x & P x } (notT { x & P x }).
+
+Definition pickableT2 A1 A2 (P : A1 -> A2 -> Type) :=
+  sum {x & let '(x1, x2) := x in P x1 x2} (notT {x1 & {x2 & P x1 x2}}).
+
 (** * Lemmas about pickability **)
 
 Lemma pickable_decidable : forall A (P : A -> Prop),
   pickable P ->
   decidable (exists x, P x).
+Proof.
+  move=> A P. case.
+  - move=> [x p]. left. by exists x.
+  - move=> N. by right.
+Defined.
+
+(* Type version *)
+(* TODO any way to dedupe this? *)
+Lemma pickable_decidable_T : forall A (P : A -> Type),
+  pickableT P ->
+  decidableT {x & P x}.
 Proof.
   move=> A P. case.
   - move=> [x p]. left. by exists x.
@@ -85,6 +108,17 @@ Lemma pickable2_equiv : forall A1 A2 (P1 P2 : A1 -> A2 -> Prop),
   (forall a1 a2, P1 a1 a2 <-> P2 a1 a2) ->
   pickable2 P1 ->
   pickable2 P2.
+Proof.
+  move=> A1 A2 P1 P2 E. case.
+  - move=> [[x1 x2] p]. left. exists (x1, x2). by apply E.
+  - move=> N. right. move=> [x1 [x2 p]]. apply: N. exists x1. exists x2. by apply E.
+Defined.
+
+(* TODO *)
+Lemma pickableT2_equiv : forall A1 A2 (P1 P2 : A1 -> A2 -> Type),
+  (forall a1 a2, iffT (P1 a1 a2) (P2 a1 a2)) ->
+  pickableT2 P1 ->
+  pickableT2 P2.
 Proof.
   move=> A1 A2 P1 P2 E. case.
   - move=> [[x1 x2] p]. left. exists (x1, x2). by apply E.
@@ -150,6 +184,16 @@ Defined.
 Lemma pickable2_weaken : forall A1 A2 (P : A1 -> A2 -> Prop),
   pickable2 P ->
   pickable (fun a1 => exists a2, P a1 a2).
+Proof.
+  move=> A1 A2 P. case.
+  - move=> [[x1 x2] p]. left. exists x1. by exists x2.
+  - move=> nE. right. move=> [x1 [x2 p]]. apply: nE. exists x1. by exists x2.
+Defined.
+
+(* TODO dedupe/reorganise *)
+Lemma pickable2_weaken_T : forall A1 A2 (P : A1 -> A2 -> Type),
+  pickableT2 P ->
+  pickableT (fun a1 => {a2 & P a1 a2}).
 Proof.
   move=> A1 A2 P. case.
   - move=> [[x1 x2] p]. left. exists x1. by exists x2.
