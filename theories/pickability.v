@@ -7,6 +7,13 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+(* Basic logic ops for Type *)
+(* XXX is there something similar in stdlib? Search didn't return anything *)
+Definition notT (T : Type) : Type := T -> Empty_set.
+Definition decidableT (T : Type) : Type := T + notT T.
+Definition iffT (A B : Type) : Type := prod (A -> B) (B -> A).
+Notation "P <=> Q" := (iffT P Q) (at level 95, right associativity).
+
 (** * General lemmas about decidability **)
 
 Lemma decidable_and : forall P1 P2,

@@ -607,6 +607,7 @@ Proof.
   move => n lh vs es LI l HLF HConst HLen.
   (* Comparing this proof to the original proof in Isabelle, it seems that (induction X rule: Y) in Isabelle means induction on proposition Y remembering X (in Coq). *)
   remember (vs++es) as es'. induction HLF; subst.
+  (* XXX how did this break? *)
   - exists (LH_base (vs0 ++ (take (length vs - l) vs)) es').
     (* The proof to this case should really have finished here; the below is just rearranging brackets and applying cat_take_drop and assumptions. *)
     replace (vs0++(vs++es)++es') with ((vs0++take (length vs - l) vs) ++ (drop (length vs - l) vs ++ es) ++ es').
@@ -745,6 +746,12 @@ Proof.
   move=> n es LI LI'. rewrite /lfilled_pickable_rec_gen_measure /=. by apply: leq_maxl.
 Qed.
 
+(** T version of the below **)
+Definition lfilledInd_pickable_rec_gen_T : forall fes,
+  (forall es' lh lh' n0, decidable (lfilledInd 0 lh (fes n0 lh') es')) ->
+  forall es', pickableT2 (fun n lh => lfilledInd n lh (fes n lh) es').
+Admitted.
+
 (** A helper definition for [lfilled_decidable_rec]. **)
 Definition lfilledInd_pickable_rec_gen : forall fes,
   (forall es' lh lh' n0, decidable (lfilledInd 0 lh (fes n0 lh') es')) ->
@@ -833,7 +840,7 @@ Proof.
   move=> fes D0 es'.
   apply: (@pickableT2_equiv _ _ (fun n lh => lfilledInd n lh (fes (0+n) lh) es')).
   { move=> n lh. by split; apply lfilled_Ind_Equivalent. }
-  apply: lfilledInd_pickable_rec_gen => es'' lh lh' n0.
+  apply: lfilledInd_pickable_rec_gen_T => es'' lh lh' n0.
   by apply: decidable_equiv; first by apply: lfilled_Ind_Equivalent.
 Defined.
 
@@ -880,7 +887,7 @@ Defined.
   (see type_soundness.v). **)
 Definition lfilled_pickable_rec : forall es,
   (forall es' lh, decidable (lfilled 0 lh es es')) ->
-  forall es', pickable2 (fun n lh => lfilled n lh es es').
+  forall es', pickableT2 (fun n lh => lfilled n lh es es').
 Proof.
   move=> es D. by apply: lfilled_pickable_rec_gen.
 Defined.
