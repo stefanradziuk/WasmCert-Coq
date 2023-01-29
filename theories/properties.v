@@ -602,12 +602,12 @@ Lemma lfilled_collapse1: forall n lh vs es LI l,
     lfilledInd n lh (vs++es) LI ->
     const_list vs ->
     length vs >= l ->
-    exists lh', lfilledInd n lh' ((drop (length vs-l) vs) ++ es) LI.
+    {lh' & lfilledInd n lh' ((drop (length vs-l) vs) ++ es) LI}.
 Proof.
   move => n lh vs es LI l HLF HConst HLen.
   (* Comparing this proof to the original proof in Isabelle, it seems that (induction X rule: Y) in Isabelle means induction on proposition Y remembering X (in Coq). *)
+  (* %SEQ / %list mess things up here -- did that even change in lfilledInd? *)
   remember (vs++es) as es'. induction HLF; subst.
-  (* XXX how did this break? *)
   - exists (LH_base (vs0 ++ (take (length vs - l) vs)) es').
     (* The proof to this case should really have finished here; the below is just rearranging brackets and applying cat_take_drop and assumptions. *)
     replace (vs0++(vs++es)++es') with ((vs0++take (length vs - l) vs) ++ (drop (length vs - l) vs ++ es) ++ es').
@@ -615,28 +615,29 @@ Proof.
       by apply const_list_take. }
     repeat rewrite -catA. f_equal.
     repeat rewrite catA. do 2 f_equal.
-    by apply cat_take_drop. 
-  - destruct IHHLF => //. eexists (LH_rec _ _ _ _ _). apply LfilledRec => //. by apply H0.
+    by apply cat_take_drop.
+  - destruct IHHLF as [? HLFdrop] => //. eexists (LH_rec _ _ _ _ _). apply LfilledRec => //. by apply HLFdrop.
 Qed.
 
 Lemma lfilled_collapse2: forall n lh es es' LI,
     lfilledInd n lh (es++es') LI ->
-    exists lh', lfilledInd n lh' es LI.
+    {lh' & lfilledInd n lh' es LI}.
 Proof.
   move => n lh es es' LI HLF. remember (es ++ es') as Ees. induction HLF; subst.
   - eexists (LH_base _ _). rewrite <- catA. by apply LfilledBase.
-  - destruct IHHLF => //. eexists (LH_rec _ _ _ _ _). apply LfilledRec => //. by apply H0.
+  - destruct IHHLF as [? HLFes] => //. eexists (LH_rec _ _ _ _ _). apply LfilledRec => //. by apply HLFes.
 Qed.
 
 Lemma lfilled_collapse3: forall k lh n les es LI,
     lfilledInd k lh [:: AI_label n les es] LI ->
-    exists lh', lfilledInd (k+1) lh' es LI.
+    {lh' & lfilledInd (k+1) lh' es LI}.
 Proof.
-  move => k lh n les es LI HLF. remember [:: AI_label n les es] as E.  induction HLF; subst.
+  move => k lh n les es LI HLF. remember [:: AI_label n les es] as E.
+  induction HLF; subst.
   - eexists (LH_rec _ _ _ _ _). apply LfilledRec. auto.
-    assert (lfilledInd 0 (LH_base nil nil) es ([::] ++ es ++ [::])). { by apply LfilledBase. }
-    simpl in H0. rewrite cats0 in H0. by apply H0.
-  - destruct IHHLF => //. eexists (LH_rec _ _ _ _ _). apply LfilledRec => //. by apply H0.
+    assert (HLF : lfilledInd 0 (LH_base nil nil) es ([::] ++ es ++ [::])). { by apply LfilledBase. }
+    simpl in HLF. rewrite cats0 in HLF. by apply HLF.
+  - destruct IHHLF as [? HLFes] => //. eexists (LH_rec _ _ _ _ _). apply LfilledRec => //. by apply HLFes.
 Qed.
 
 Lemma lfilled_deterministic: forall k lh es les les',
@@ -651,7 +652,7 @@ Proof.
   replace les' with l.
   { move: HLF. by apply/eqseqP. }
   symmetry. move: HLF'. by apply/eqseqP. 
-Qed.  
+Qed.
 
 Lemma all_projection: forall {X:Type} f (l:seq X) n x,
     all f l ->
@@ -748,24 +749,27 @@ Qed.
 
 (** T version of the below **)
 Definition lfilledInd_pickable_rec_gen_T : forall fes,
-  (forall es' lh lh' n0, decidable (lfilledInd 0 lh (fes n0 lh') es')) ->
+  (forall es' lh lh' n0, decidableT (lfilledInd 0 lh (fes n0 lh') es')) ->
   forall es', pickableT2 (fun n lh => lfilledInd n lh (fes n lh) es').
 Admitted.
 
 (** A helper definition for [lfilled_decidable_rec]. **)
 Definition lfilledInd_pickable_rec_gen : forall fes,
-  (forall es' lh lh' n0, decidable (lfilledInd 0 lh (fes n0 lh') es')) ->
-  forall es', pickable2 (fun n lh => lfilledInd n lh (fes n lh) es').
+  (forall es' lh lh' n0, decidableT (lfilledInd 0 lh (fes n0 lh') es')) ->
+  forall es', pickableT2 (fun n lh => lfilledInd n lh (fes n lh) es').
 Proof.
+Admitted.
+(* TODO conversion to Type *)
+(*
   move=> fes D0 es'.
-  apply: (@pickable2_equiv _ _ (fun n lh => lfilledInd n lh (fes (0+n) lh) es')); first by [].
+  apply: (@pickableT2_equiv _ _ (fun n lh => lfilledInd n lh (fes (0+n) lh) es')); first by [].
   move: 0 => k.
   have [m E]: { m | lfilled_pickable_rec_gen_measure es' = m }; first by eexists.
   move: fes D0 es' E k. strong induction m. rename X into IH. move=> fes D0 es' E k.
   have Dcl: forall vs, decidable (const_list vs).
   { move=> vs. by apply: is_true_decidable. }
   (** First, we check whether we can set [n = 0]. **)
-  have P0: pickable2 (fun vs es'' =>
+  have P0: pickableT2 (fun vs es'' =>
                        let lh := LH_base vs es'' in
                        let es := fes k lh in
                        es' = vs ++ es ++ es'' /\ const_list vs /\ lfilledInd 0 lh es es').
@@ -832,50 +836,55 @@ Proof.
       by apply: LfilledBase.
     + apply: nE'. by repeat eexists.
 Defined.
+ *)
 
 Definition lfilled_pickable_rec_gen : forall fes,
-  (forall es' lh lh' n0, decidable (lfilled 0 lh (fes n0 lh') es')) ->
+  (forall es' lh lh' n0, decidableT (lfilled 0 lh (fes n0 lh') es')) ->
   forall es', pickableT2 (fun n lh => lfilled n lh (fes n lh) es').
 Proof.
   move=> fes D0 es'.
   apply: (@pickableT2_equiv _ _ (fun n lh => lfilledInd n lh (fes (0+n) lh) es')).
   { move=> n lh. by split; apply lfilled_Ind_Equivalent. }
   apply: lfilledInd_pickable_rec_gen_T => es'' lh lh' n0.
-  by apply: decidable_equiv; first by apply: lfilled_Ind_Equivalent.
+  by apply: decidableT_equiv; first by apply: lfilled_Ind_Equivalent.
 Defined.
 
 (** We can always decide [lfilled 0]. **)
 Lemma lfilled_decidable_base : forall es es' lh,
-  decidable (lfilled 0 lh es es').
+  decidableT (lfilled 0 lh es es').
 Proof.
-  move=> es es' lh. apply: (@decidable_equiv (lfilledInd 0 lh es es')).
+  move=> es es' lh. apply: (@decidableT_equiv (lfilledInd 0 lh es es')).
   { by split; apply lfilled_Ind_Equivalent. }
   case lh.
   - move=> vsh esh.
-    have: pickable2 (fun vs es'' => es' = vs ++ es ++ es'' /\ const_list vs /\ vs = vsh /\ es'' = esh).
+    have: pickableT2 (fun vs es'' => (es' = vs ++ es ++ es'') ** (const_list vs) ** (vs = vsh /\ es'' = esh)).
     {
-      apply: list_search_split_pickable2.
+      apply: list_search_split_pickableT2.
       - by apply: administrative_instruction_eq_dec.
-      - move=> ? ?. by repeat apply: decidable_and; apply: eq_comparable.
+        (* TODO cannot apply eq_comparable *)
+      - move=> ? ?. Fail by repeat apply: decidableT_and; apply: eq_comparable.
+Admitted.
+(*
     }
     case.
     + move=> [[vs es''] [E [C [E1 E2]]]]. left. subst. by constructor.
     + move=> nE. right. move=> I. apply: nE. inversion I. subst. by repeat eexists.
   - move=> vs n es'' lh' es'''. right. move=> I. by inversion I.
 Defined.
+ *)
 
 (** We can furthermore rebuild the stack [lh] for any [lfilled 0] predicate. **)
 Lemma lfilled_pickable_base : forall es es',
-  pickable (fun lh => lfilled 0 lh es es').
+  pickableT (fun lh => lfilled 0 lh es es').
 Proof.
-  move=> es es'. apply: (@pickable_equiv _ (fun lh => lfilledInd 0 lh es es')).
+  move=> es es'. apply: (@pickableT_equiv _ (fun lh => lfilledInd 0 lh es es')).
   { move=> lh. by split; apply lfilled_Ind_Equivalent. }
-  have: pickable2 (fun vs es'' => es' = vs ++ es ++ es'' /\ const_list vs /\ True).
+  have: pickableT2 (fun vs es'' => (es' = vs ++ es ++ es'') ** (const_list vs) ** True).
   {
-    apply: list_search_split_pickable2.
+    apply: list_search_split_pickableT2.
     - by apply: administrative_instruction_eq_dec.
-    - move=> ? ?. apply: decidable_and.
-      + by apply: is_true_decidable.
+    - move=> ? ?. apply: decidableT_and.
+      + by apply: is_true_decidableT.
       + by left.
   }
   case.
@@ -886,7 +895,7 @@ Defined.
 (** A helper definition for the decidability of [br_reduce] and [return_reduce]
   (see type_soundness.v). **)
 Definition lfilled_pickable_rec : forall es,
-  (forall es' lh, decidable (lfilled 0 lh es es')) ->
+  (forall es' lh, decidableT (lfilled 0 lh es es')) ->
   forall es', pickableT2 (fun n lh => lfilled n lh es es').
 Proof.
   move=> es D. by apply: lfilled_pickable_rec_gen.

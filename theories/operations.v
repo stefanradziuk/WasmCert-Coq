@@ -11,10 +11,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Require Import Coq.Init.Datatypes.
-
-(* XXX do the extra spaces here make a difference? *)
-Notation " P ** Q " := (prod P Q) (at level 5, right associativity).
+From Coq Require Import Init.Datatypes.
 
 Section Host.
 
@@ -602,17 +599,21 @@ Fixpoint lfill (k : nat) (lh : lholed) (es : seq administrative_instruction) : o
 Definition lfilled (k : nat) (lh : lholed) (es : seq administrative_instruction) (es' : seq administrative_instruction) : bool :=
   if lfill k lh es is Some es'' then es' == es'' else false.
 
-Inductive lfilledInd : nat -> lholed -> seq administrative_instruction -> seq administrative_instruction -> Prop :=
+(* XXX Coq.Datatypes import shadows seq ++, so %SEQ is needed
+ * import qualified instead?
+ *)
+Inductive lfilledInd : nat -> lholed -> seq administrative_instruction -> seq administrative_instruction -> Type :=
 | LfilledBase: forall vs es es',
     const_list vs ->
-    lfilledInd 0 (LH_base vs es') es (vs ++ es ++ es')
+    lfilledInd 0 (LH_base vs es') es (vs ++ es ++ es')%SEQ
 | LfilledRec: forall k vs n es' lh' es'' es LI,
     const_list vs ->
     lfilledInd k lh' es LI ->
-    lfilledInd (k.+1) (LH_rec vs n es' lh' es'') es (vs ++ [ :: (AI_label n es' LI) ] ++ es'').
+    lfilledInd (k.+1) (LH_rec vs n es' lh' es'') es (vs ++ [ :: (AI_label n es' LI) ] ++ es'')%SEQ.
 
 Lemma lfilled_Ind_Equivalent: forall k lh es LI,
-    lfilled k lh es LI <-> lfilledInd k lh es LI.
+    (* TODO iffT notation *)
+    iffT (lfilled k lh es LI) (lfilledInd k lh es LI).
 Proof.
   move => k. split.
   - move: lh es LI. induction k; move => lh es LI HFix.
@@ -639,8 +640,17 @@ Qed.
 (* XXX reflect needs a Prop
  * does it still make sense with lfilledInd as Type?
  *)
+
+(* TODO need to move out all Type-specific funcs out into a module *)
+Inductive reflectT (T : Type) : bool -> Type :=
+  | ReflectT : T -> reflectT T true
+  | ReflectF : notT T -> reflectT T false.
+
+(* TODO this typechecks but looks like it's not applicable anywhere?
+ * does reflectT need something more? is it built into 'apply/x'?
+ *)
 Lemma lfilledP: forall k lh es LI,
-    reflect (lfilledInd k lh es LI) (lfilled k lh es LI).
+    reflectT (lfilledInd k lh es LI) (lfilled k lh es LI).
 Proof.
   move => k lh es LI. destruct (lfilled k lh es LI) eqn:HLFBool.
   - apply ReflectT. by apply lfilled_Ind_Equivalent.

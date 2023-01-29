@@ -8,11 +8,16 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 (* Basic logic ops for Type *)
+(* TODO move those into a separate file *)
 (* XXX is there something similar in stdlib? Search didn't return anything *)
 Definition notT (T : Type) : Type := T -> Empty_set.
 Definition decidableT (T : Type) : Type := T + notT T.
 Definition iffT (A B : Type) : Type := prod (A -> B) (B -> A).
-Notation "P <=> Q" := (iffT P Q) (at level 95, right associativity).
+Notation "P <--> Q" := (iffT P Q) (at level 95, right associativity).
+(* XXX resolve deprecation warning
+ * used this to get not-like behaviour for auto tactics but *)
+Hint Unfold notT : core.
+Hint Unfold iffT : core.
 
 (** * General lemmas about decidability **)
 
@@ -35,7 +40,7 @@ Lemma decidable_equiv : forall P1 P2,
 Proof.
   move=> P1 P2 [I1 I2] [H | nH].
   - by left; auto.
-  - by right; auto.
+  - by right; info_auto.
 Defined.
 
 Lemma is_true_bool : forall b1 b2 : bool,
@@ -47,6 +52,39 @@ Qed.
 Lemma is_true_decidable : forall b : bool, decidable b.
 Proof.
   move=> b. by apply: eq_comparable.
+Defined.
+
+(** * General lemmas about decidability (Type version) **)
+
+Lemma decidableT_and : forall P1 P2,
+  (* TODO sort out ** notation *)
+  decidableT P1 ->
+  decidableT P2 ->
+  decidableT (prod P1 P2).
+Proof.
+  move=> P1 P2. case.
+  - move=> p1. case.
+    + move=> p2. by left.
+    + move=> np2. right. by move=> [? ?].
+  - move=> np1 _. right. by move=> [? ?].
+Defined.
+
+Lemma decidableT_equiv : forall P1 P2,
+  (P1 <--> P2) ->
+  decidableT P1 ->
+  decidableT P2.
+Proof.
+  move=> P1 P2 [I1 I2] [H | nH].
+  - by left; auto.
+  - by right; auto.
+Defined.
+
+(* XXX couldn't use eq_comparable as above *)
+Lemma is_true_decidableT : forall b : bool, decidableT b.
+Proof.
+  unfold decidableT. destruct b.
+  - auto.
+  - right. discriminate.
 Defined.
 
 (** * Definition of Pickability **)
@@ -79,6 +117,8 @@ Definition pickableT A (P : A -> Type) :=
 Definition pickableT2 A1 A2 (P : A1 -> A2 -> Type) :=
   sum {x & let '(x1, x2) := x in P x1 x2} (notT {x1 & {x2 & P x1 x2}}).
 
+Definition pickableT3 A1 A2 A3 (P : A1 -> A2 -> A3 -> Type) :=
+  sum {x & let '(x1, x2, x3) := x in P x1 x2 x3} (notT {x1 & {x2 & {x3 & P x1 x2 x3}}}).
 (** * Lemmas about pickability **)
 
 Lemma pickable_decidable : forall A (P : A -> Prop),
@@ -111,6 +151,16 @@ Proof.
   - move=> N. right. move=> [x p]. apply: N. exists x. by apply E.
 Defined.
 
+Lemma pickableT_equiv : forall A (P1 P2 : A -> Type),
+  (forall a, P1 a <--> P2 a) ->
+  pickableT P1 ->
+  pickableT P2.
+Proof.
+  move=> A P1 P2 E. case.
+  - move=> [x p]. left. exists x. by apply E.
+  - move=> N. right. move=> [x p]. apply: N. exists x. by apply E.
+Defined.
+
 Lemma pickable2_equiv : forall A1 A2 (P1 P2 : A1 -> A2 -> Prop),
   (forall a1 a2, P1 a1 a2 <-> P2 a1 a2) ->
   pickable2 P1 ->
@@ -121,9 +171,8 @@ Proof.
   - move=> N. right. move=> [x1 [x2 p]]. apply: N. exists x1. exists x2. by apply E.
 Defined.
 
-(* TODO *)
 Lemma pickableT2_equiv : forall A1 A2 (P1 P2 : A1 -> A2 -> Type),
-  (forall a1 a2, iffT (P1 a1 a2) (P2 a1 a2)) ->
+  (forall a1 a2, P1 a1 a2 <--> P2 a1 a2) ->
   pickableT2 P1 ->
   pickableT2 P2.
 Proof.
@@ -176,11 +225,14 @@ Proof.
   - move=> N. right. move=> [x p]. apply: N. move: (E2 _ p) => [a p']. by exists a.
 Defined.
 
-Lemma pickable2_convert : forall A1 A2 B1 B2 (P1 P2 : _ -> _ -> Prop) (f : A1 * A2 -> B1 * B2),
+(* XXX the Prop version was not used anymore
+ * decide whether others should be deleted
+ *)
+Lemma pickable2_convert_T : forall A1 A2 B1 B2 (P1 P2 : _ -> _ -> Type) (f : A1 * A2 -> B1 * B2),
   (forall a1 a2, P1 a1 a2 -> let (b1, b2) := f (a1, a2) in P2 b1 b2) ->
-  (forall b1 b2, P2 b1 b2 -> exists a1 a2, P1 a1 a2) ->
-  pickable2 P1 ->
-  pickable2 P2.
+  (forall b1 b2, P2 b1 b2 -> {a1 & {a2 & P1 a1 a2}}) ->
+  pickableT2 P1 ->
+  pickableT2 P2.
 Proof.
   move=> A1 A2 B1 B2 P1 P2 f E1 E2. case.
   - move=> [[x1 x2] p]. left. exists (f (x1, x2)). by apply: E1.

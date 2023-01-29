@@ -587,9 +587,11 @@ Definition mem_agree (m : memory) : Prop :=
 Definition store_typing (s : store_record) : Type :=
   match s with
   | Build_store_record fs tclss mss gs =>
-    (common.TProp.Forall (cl_type_check_single s) fs) **
-    (List.Forall (tab_agree s) tclss) **
-    (List.Forall mem_agree mss)
+      (* TODO move ** notation into a file to make it available without
+      * importing other things *)
+    prod (common.TProp.Forall (cl_type_check_single s) fs)
+    (prod (List.Forall (tab_agree s) tclss)
+    (List.Forall mem_agree mss))
   end.
 
 Inductive config_typing : store_record -> frame -> seq administrative_instruction -> seq value_type -> Type :=
