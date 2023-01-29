@@ -443,6 +443,7 @@ Definition inst_typing (s : store_record) (inst : instance) (C : t_context) : bo
   | _ => false
   end.
 
+(* TODO: this needs to be a Type for inversion in progress *)
 Inductive frame_typing: store_record -> frame -> t_context -> Prop :=
 | mk_frame_typing: forall s i tvs C f,
     inst_typing s i C ->
