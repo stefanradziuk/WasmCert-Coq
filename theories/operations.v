@@ -11,7 +11,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From Coq Require Import Init.Datatypes.
+(* From Coq Require Import Init.Datatypes. *)
 
 Section Host.
 
@@ -641,10 +641,55 @@ Qed.
  * does it still make sense with lfilledInd as Type?
  *)
 
+(****************)
+(* adapted from Bool/Bool.v *)
+From Coq Require Import Bool.
+
 (* TODO need to move out all Type-specific funcs out into a module *)
 Inductive reflectT (T : Type) : bool -> Type :=
   | ReflectT : T -> reflectT T true
   | ReflectF : notT T -> reflectT T false.
+(* TODO hints would be useful?
+Hint Constructors reflect : core.
+ *)
+
+Lemma reflectT_iff : forall P b, reflectT P b -> (P<-->b=true).
+Proof.
+  destruct 1 => //.
+Qed.
+
+Lemma iff_reflectT : forall P b, (P<-->b=true) -> reflectT P b.
+Proof.
+ destr_bool.
+ - destruct X as [_ X]. constructor. auto.
+ - constructor. inversion X. unfold notT.
+   assert (Hvoid : false = true -> void). { intro Hft. discriminate Hft. }
+   auto.
+Qed.
+
+(** It would be nice to join [reflect_iff] and [iff_reflect]
+    in a unique [iff] statement, but this isn't allowed since
+    [iff] is in Prop. *)
+(* XXX look into if this might be useful? *)
+
+(** Reflect implies decidability of the proposition *)
+
+Lemma reflectT_dec : forall P b, reflectT P b -> P + notT P.
+Proof.
+ destruct 1; auto.
+Defined.
+
+(** Reciprocally, from a decidability, we could state a
+    [reflect] as soon as we have a [bool_of_sumbool]. *)
+
+(** For instance, we could state the correctness of [Bool.eqb] via [reflect]: *)
+
+Lemma eqb_spec_T (b b' : bool) : reflectT (b = b') (eqb b b').
+Proof.
+ destruct b, b'; now constructor.
+Defined.
+
+(****************)
 
 (* TODO this typechecks but looks like it's not applicable anywhere?
  * does reflectT need something more? is it built into 'apply/x'?

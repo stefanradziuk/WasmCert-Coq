@@ -56,7 +56,16 @@ Proof.
   destruct vs => //=; eapply rs_trap; try by destruct vs => //=.
   assert (LF : lfilledInd 0 (LH_base (a::vs) [::]) [::AI_trap] (a::vs++[::AI_trap])).
   { by apply LfilledBase. }
-  apply/lfilledP.
+  (* XXX had to do all that instead of apply/lfilledP.
+   * this is not going to work well in larger proofs
+   *)
+  assert (Hrefl
+    : reflectT
+      (lfilledInd 0 (LH_base (a :: vs) [::]) [:: AI_trap] (a :: vs ++ [:: AI_trap]))
+      (lfilled 0 (LH_base (a :: vs) [::]) [:: AI_trap] (a :: vs ++ [:: AI_trap]))
+  ). { apply lfilledP. }
+  instantiate (1 := LH_base (a :: vs) [::]).
+  apply (reflectT_iff Hrefl).
   by apply LF.
 Qed.
 
