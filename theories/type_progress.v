@@ -914,26 +914,19 @@ Traceback:
     with Return in be_typing either.
  *)
 
+(* TODO delete, rename new ones
 Definition br_reduce (es: seq administrative_instruction) :=
   exists n lh, lfilled n lh [::AI_basic (BI_br n)] es.
 
 Definition return_reduce (es: seq administrative_instruction) :=
   exists n lh, lfilled n lh [::AI_basic BI_return] es.
+ *)
 
 Definition br_reduceT (es: seq administrative_instruction) :=
   {n & {lh & lfilled n lh [::AI_basic (BI_br n)] es}}.
 
 Definition return_reduceT (es: seq administrative_instruction) :=
   {n & {lh & lfilled n lh [::AI_basic BI_return] es}}.
-
-(* XXX decidable needs Prop -- how to handle this? *)
-
-Check pickable_decidable.
-Check br_reduce.
-
-Check pickable.
-Check pickableT.
-Check forall es, br_reduce es.
 
 (** [br_reduce] is decidable. **)
 Lemma br_reduce_decidable : forall es, decidableT (br_reduceT es).
@@ -1016,14 +1009,13 @@ Proof.
     by simpl in R.
 Qed.
 
-(* TODO need sigma? *)
 Lemma br_reduce_extract_vs: forall n k lh es s C ts ts2,
     lfilled n lh [::AI_basic (BI_br (n + k))] es ->
     e_typing s C es (Tf [::] ts2) ->
     List.nth_error (tc_label C) k = Some ts ->
-    exists vs lh', const_list vs /\
-      lfilled n lh' (vs ++ [::AI_basic (BI_br (n + k))]) es /\
-      length vs = length ts.
+    {vs & {lh' & (const_list vs) **
+      (lfilled n lh' (vs ++ [::AI_basic (BI_br (n + k))]) es) **
+      (length vs = length ts)}}.
 Proof.
   move => n k lh es s C ts ts2 HLF.
   apply lfilled_Ind_Equivalent in HLF.
@@ -1060,7 +1052,7 @@ Proof.
       by rewrite size_map.
   - invert_e_typing.
     destruct ts0; destruct t1s => //; clear H1.
-    edestruct IHHLF; eauto.
+    edestruct IHHLF as [? H]; eauto.
     { instantiate (1 := k.+1).
       repeat (f_equal; try by lias). }
     {  simpl. by eauto. }
@@ -1073,14 +1065,13 @@ Proof.
     by apply HLength.
 Qed.
 
-(* TODO need sigma? *)
 Lemma return_reduce_extract_vs: forall n lh es s C ts ts2,
     lfilled n lh [::AI_basic BI_return] es ->
     e_typing s C es (Tf [::] ts2) ->
     tc_return C = Some ts ->
-    exists vs lh', const_list vs /\
-      lfilled n lh' (vs ++ [::AI_basic BI_return]) es /\
-      length vs = length ts.
+    {vs & {lh' & (const_list vs) **
+      (lfilled n lh' (vs ++ [::AI_basic BI_return]) es) **
+      (length vs = length ts)}}.
 Proof.
   move => n lh es s C ts ts2 HLF.
   apply lfilled_Ind_Equivalent in HLF.
@@ -1116,7 +1107,8 @@ Proof.
   - invert_e_typing.
     destruct ts0; destruct t1s => //; clear H1.
     edestruct IHHLF; eauto.
-    destruct H as [lh2 [HConst [HLF2 HLength]]].
+    (* TODO s0 naming (dependent induction) *)
+    destruct s0 as [lh2 [HConst [HLF2 HLength]]].
     repeat eexists. repeat split => //; eauto.
     apply lfilled_Ind_Equivalent in HLF2. apply lfilled_Ind_Equivalent.
     instantiate (1 := (LH_rec vs (length ts2) es' lh2 es'')).
@@ -1160,7 +1152,7 @@ Lemma s_typing_lf_br: forall s rs f es ts,
     (forall n lh k, lfilled n lh [::AI_basic (BI_br k)] es -> k < n).
 Proof.
   move => s rs f es ts HType n lh k HLF.
-  inversion HType. inversion H. subst.
+  inversion HType as [??????? HFT]. inversion HFT. subst.
   destruct (k<n) eqn: H3 => //=.
   move/ltP in H3.
   assert (Inf : n <= k); first by lias.
@@ -1170,7 +1162,7 @@ Proof.
   (* TODO why was this not HLF before? was there a dupe? *)
   eapply br_reduce_label_length in HLF; eauto.
   simpl in HLF.
-  assert (E : tc_label C1 = [::]); first by eapply inst_t_context_label_empty; eauto.
+  assert (E : tc_label C1 = [::]). eapply inst_t_context_label_empty. eauto.
   by rewrite E in HLF.
 Qed.
 
@@ -1180,13 +1172,13 @@ Lemma s_typing_lf_return: forall s f es ts,
 Proof.
   unfold not_lf_return.
   move => s f es ts HType n lh HContra.
-  inversion HType; subst.
-  (* TODO naming *)
-  by eapply return_reduce_return_some in X; eauto.
+  (* TODO the naming here is a bit flaky -- subst comes up with X0 (?) *)
+  inversion HType as [??????? H X]; subst.
+  by eapply return_reduce_return_some in X0; eauto.
 Qed.
 
 Axiom host_application_exists: forall hs s tf hf vcs,
-    exists hs' res, host_application hs s tf hf vcs hs' res.
+    {hs' & {res & host_application hs s tf hf vcs hs' res}}.
 
 Lemma t_progress_e: forall s C C' f vcs es tf ts1 ts2 lab ret hs,
     e_typing s C es tf ->
@@ -1220,7 +1212,7 @@ Proof.
               store_typing s ->
               (forall n lh k, lfilled n lh [::AI_basic (BI_br k)] es -> k < n) ->
               (forall n, not_lf_return es n) ->
-              ((const_list es) ** (length es = length ts)) +
+              (const_list es) ** (length es = length ts) +
               (es = [::AI_trap]) +
               {s' & {f' & {es' & {hs' & reduce hs s f es hs' s' f' es'}}}}); clear HType s C es tf.
   (* The previous variables s/C/es/tf still lingers here so we need to clear *)
@@ -1374,31 +1366,38 @@ Proof.
     right.
     destruct (return_reduce_decidable es) as [HEMT | HEMF].
     { inversion HType; subst.
-      unfold return_reduce in HEMT.
+      unfold return_reduceT in HEMT.
       destruct HEMT as [n [lh HLF]].
       (* HEMT is almost what we need to prove the rs_return reduction, but we also need to prove
            that there are some consts of suitable length before the [::AI_basic Return] as well.
          Done as a separate lemma. *)
       eapply return_reduce_extract_vs in HLF; eauto.
       instantiate (1 := ts2) in HLF.
-      Fail destruct HLF as [cs [lh' [HConst [HLF2 HLength]]]].
-Admitted. (* TODO
+      destruct HLF as [cs [lh' [HConst [HLF2 HLength]]]].
       repeat eexists.
       apply r_simple.
       eapply rs_return; eauto.
       by [].
     }
-    edestruct IHHType as [ | [ | ]]; eauto.
+    (* XXX pattern change - \/ / + associativity
+     * return to nested pattrn? [ [] | ] ?
+     *)
+    edestruct IHHType as [H | H]; eauto.
     {
       move => n lh k HLF.
       by eapply s_typing_lf_br in HLF; eauto.
     }
-    { unfold return_reduce in HEMF. unfold not_lf_return.
+    { unfold return_reduceT in HEMF. unfold not_lf_return.
       move => n lh HContra.
+      (* TODO could this be made nicer through automation / redefintion of
+       * notT? shouldn't have to apply this explicitly
+       *)
+      apply Empty_set_imp_False.
       apply HEMF. by eauto.
     }
     + (* Const *)
-      destruct H.
+      (* XXX H is wrong here - it shouln't have the disjunction??? *)
+      destruct H as [[H1 H2]|H].
       exists s, f, es, hs.
       apply r_simple.
       by apply rs_local_const.
@@ -1415,7 +1414,8 @@ Admitted. (* TODO
     move => s a C cl tf HNth HType.
     move => f C' vcs ts1 ts2 lab ret hs HTF HContext HInst HConstType HST HBI_brDepth HNRet.
     inversion HType; subst.
-    inversion H5; subst; clear H5.
+    (* TODO use explicit naming *)
+    inversion H4; subst; clear H4.
     + (* Native *)
       right.
       exists s, f, [:: AI_local (length ts2) (Build_frame (vcs ++ n_zeros ts) i) [::AI_basic (BI_block (Tf [::] ts2) es)]], hs.
@@ -1429,7 +1429,7 @@ Admitted. (* TODO
       (* UPD: with the new host and the related reductions, this shortcut no longer
          works. We will now need to consider the result of host execution and 
          specify the reduction resultion result in either case. *)
-      assert (HApply: exists hs' res, host_application hs s (Tf (map typeof vcs) ts2) h vcs hs' res). apply host_application_exists.
+      assert (HApply: {hs' & {res & host_application hs s (Tf (map typeof vcs) ts2) h vcs hs' res}}). apply host_application_exists.
       destruct HApply as [hs' [res HApply]].
       destruct res as [opres |].
       destruct opres as [p r].
@@ -1448,9 +1448,9 @@ Admitted. (* TODO
     symmetry in H0. invert_typeof_vcs.
     rewrite upd_label_overwrite in HType2. simpl in HType2.
     destruct (br_reduce_decidable es) as [HEMT | HEMF].
-    { unfold br_reduce in HEMT.
+    { unfold br_reduceT in HEMT.
       destruct HEMT as [n [lh HLF]].
-      right. 
+      right.
       assert (LF : lfilled n lh [::AI_basic (BI_br (n+0))] es); first by rewrite addn0.
       eapply br_reduce_extract_vs in LF => //; eauto.
       instantiate (1 := ts) in LF.
@@ -1461,13 +1461,13 @@ Admitted. (* TODO
       eapply rs_br; eauto.
       by [].
     }
-    edestruct IHHType2; eauto.
+    edestruct IHHType2 as [HTerm | HReduce]; eauto.
     { rewrite upd_label_overwrite. simpl. eauto. }
-    { unfold br_reduce in HEMF.
+    { unfold br_reduceT in HEMF.
       move => n lh k HLF.
       assert (Inf : k < n.+1). (* FIXME: Proof items to be added here. *)
       { eapply HBI_brDepth.
-      move lfilled_Ind_Equivalent in HLF.
+      apply lfilled_Ind_Equivalent in HLF.
       apply lfilled_Ind_Equivalent.
       assert (LF : lfilledInd (n.+1) (LH_rec [::] (length ts) e0s lh [::]) [::AI_basic (BI_br k)] ([::] ++ [::AI_label (length ts) e0s es] ++ [::]));
         first by apply LfilledRec.
@@ -1478,21 +1478,24 @@ Admitted. (* TODO
       remove_bools_options => //.
       subst.
       exfalso.
+      (* TODO make this neater somehow? *)
+      apply Empty_set_imp_False.
       apply HEMF. repeat eexists. by apply HLF.
     }
     { unfold not_lf_return.
       move => n lh HContra.
       unfold not_lf_return in HNRet.
       eapply HNRet.
-      move lfilled_Ind_Equivalent in HContra.
+      apply lfilled_Ind_Equivalent in HContra.
       apply lfilled_Ind_Equivalent.
       assert (LF : lfilledInd (n.+1) (LH_rec [::] (length ts) e0s lh [::]) [::AI_basic BI_return] ([::] ++ [::AI_label (length ts) e0s es] ++ [::]));
         first by apply LfilledRec.
       by apply LF.
     }
     + (* Terminal *)
-      apply terminal_form_v_e in H.
-      unfold terminal_form in H. destruct H.
+      (* TODO explicit naming *)
+      apply terminal_form_v_e in HTerm.
+      unfold terminal_form in HTerm. destruct HTerm.
       * (* Const *)
         right.
         exists s, f, es, hs.
@@ -1505,7 +1508,8 @@ Admitted. (* TODO
         by apply rs_label_trap.
         by apply v_to_e_is_const_list.
     + (* reduce *)
-      destruct H as [s' [f' [es' [hs' HReduce]]]].
+      (* TODO explicit naming *)
+      destruct HReduce as [s' [f' [es' [hs' HReduce]]]].
       right.
       simpl in HReduce.
       exists s', f', [::AI_label (length ts) e0s es'], hs'.
@@ -1514,28 +1518,27 @@ Admitted. (* TODO
     move => s f es rs ts C C0 HFT HContext HType IHHType HRetType hs HST HBI_brDepth HNRet.
     inversion HFT.
     subst.
-    edestruct IHHType; eauto.
+    edestruct IHHType as [HTerm | HReduce]; eauto.
     { (* Context *)
       assert (E : tc_local C1 = [::]).
       { by eapply inst_t_context_local_empty; eauto. }
       rewrite E. simpl.
       by fold_upd_context. }
     { by instantiate (1 := [::]). }
-    + unfold terminal_form in H0. destruct H0.
+    + unfold terminal_form in HTerm. destruct HTerm as [HTerm|].
       * (* Const *)
-        left. split => //.
+        left. left. split => //.
         apply et_to_bet in HType; try by apply const_list_is_basic.
-        simpl in H0.
-        apply const_es_exists in H0. destruct H0 as [es' H0]. subst.
+        simpl in HTerm.
+        apply const_es_exists in HTerm. destruct HTerm as [es' HTerm]. subst.
         apply Const_list_typing in HType. subst.
         repeat rewrite length_is_size. simpl.
         rewrite v_to_e_size. by rewrite size_map.
       * (* AI_trap *)
-        right. by left.
+        left. by right.
     + (* reduce *)
-      simpl in H0. right. right. by eauto.
+      simpl in HReduce. right. by eauto.
 Qed.
-*)
 
 Theorem t_progress: forall s f es ts hs,
     config_typing s f es ts ->
@@ -1543,9 +1546,9 @@ Theorem t_progress: forall s f es ts hs,
     {s' & {f' & {es' & {hs' & reduce hs s f es hs' s' f' es'}}}}.
 Proof.
   move => s f es ts hs HType.
-  inversion HType as [????? Hstyping]. inversion Hstyping as [??????? Hftyping]. Fail inversion Hftyping.
+  inversion HType as [????? Hstyping]. inversion Hstyping as [??????? Hftyping]. inversion Hftyping.
+  Fail eapply t_progress_e with (vcs := [::]) (ret := None) (lab := [::]) in H7; eauto.
 Admitted. (* TODO subst.
-  eapply t_progress_e with (vcs := [::]) (ret := None) (lab := [::]) in H7; eauto.
   - assert (E : tc_local C1 = [::]).
     { by eapply inst_t_context_local_empty; eauto. }
     rewrite E. simpl.
