@@ -93,13 +93,10 @@ Lemma reduce_composition: forall s cs f es es0 s' f' es' hs hs',
 Proof.
   move => s cs f es es0 s' f' es' hs hs' HConst HReduce.
   eapply r_label; eauto; apply lfilled_Ind_Equivalent.
-Admitted.
-  (* TODO
   - instantiate (1 := (LH_base cs es0)). instantiate (1 := 0).
     by apply LfilledBase.
   - by apply LfilledBase.
 Qed.
-   *)
 
 Lemma reduce_composition_right: forall s f es es0 s' f' es' hs hs',
     reduce hs s f es hs' s' f' es' ->
@@ -129,26 +126,20 @@ Lemma lfilled0_empty: forall es,
 Proof.
   move => es.
   apply lfilled_Ind_Equivalent.
-Admitted.
-  (* TODO
   assert (LF : lfilledInd 0 (LH_base [::] [::]) es ([::] ++ es ++ [::])); first by apply LfilledBase.
   by rewrite cats0 in LF.
 Qed.
-   *)
 
 Lemma label_lfilled1: forall n es es0,
     lfilled 1 (LH_rec [::] n es0 (LH_base [::] [::]) [::]) es [::AI_label n es0 es].
 Proof.
   move => n es es0.
   apply lfilled_Ind_Equivalent.
-Admitted.
-(* TODO
   replace [:: AI_label n es0 es] with ([::] ++ [::AI_label n es0 es] ++ [::]) => //.
   apply LfilledRec => //.
   assert (LF : lfilledInd 0 (LH_base [::] [::]) es ([::] ++ es ++ [::])); first by apply LfilledBase.
   simpl in LF. by rewrite cats0 in LF.
 Qed.
- *)
 
 Lemma terminal_form_v_e: forall vs es,
     const_list vs ->
@@ -373,9 +364,7 @@ Lemma lf_composition: forall es es2 e0 lh n,
     exists lh', lfilled n lh' e0 (es ++ es2).
 Proof.
   move => es es2 e0 lh n HLF.
-  (* TODO move? *)
   apply lfilled_Ind_Equivalent in HLF.
-Admitted. (* TODO
   inversion HLF; subst.
   - exists (LH_base vs (es' ++ es2)).
     apply lfilled_Ind_Equivalent.
@@ -386,7 +375,6 @@ Admitted. (* TODO
     repeat rewrite -catA.
     by apply LfilledRec.
 Qed.
-           *)
 
 Lemma lf_composition_left: forall cs es e0 lh n,
     const_list cs ->
@@ -394,9 +382,7 @@ Lemma lf_composition_left: forall cs es e0 lh n,
     exists lh', lfilled n lh' e0 (cs ++ es).
 Proof.
   move => cs es e0 lh n HConst HLF.
-  (* XXX move? *)
   apply lfilled_Ind_Equivalent in HLF.
-Admitted. (* TODO
   inversion HLF; subst.
   - exists (LH_base (cs ++ vs) es').
     apply lfilled_Ind_Equivalent.
@@ -409,7 +395,6 @@ Admitted. (* TODO
     apply LfilledRec => //.
     by apply const_list_concat.
 Qed.
-           *)
 
 Lemma nlfbr_right: forall es n es',
     not_lf_br (es ++ es') n ->
@@ -990,9 +975,7 @@ Proof.
   move => n k lh es s C ts2 HLF.
   generalize dependent ts2. generalize dependent C.
   generalize dependent s.
-  (* XXX move? *)
   apply lfilled_Ind_Equivalent in HLF.
-Admitted. (* TODO
   dependent induction HLF; move => s C ts2 HType.
   - invert_e_typing.
     destruct ts => //=; destruct t1s => //=; clear H1.
@@ -1011,7 +994,6 @@ Admitted. (* TODO
       repeat (f_equal; try by lias). }
     simpl in Inf. by lias.
 Qed.
-           *)
 
 Lemma return_reduce_return_some: forall n lh es s C ts2,
     lfilled n lh [::AI_basic BI_return] es ->
@@ -1020,9 +1002,7 @@ Lemma return_reduce_return_some: forall n lh es s C ts2,
 Proof.
   move => n lh es s C ts2 HLF.
   generalize dependent s. generalize dependent C. generalize dependent ts2.
-  (* XXX move? *)
   apply lfilled_Ind_Equivalent in HLF.
-Admitted. (*
   dependent induction HLF; subst; move => ts2 C s HType.
   - invert_e_typing.
     destruct ts; destruct t1s => //=; clear H1.
@@ -1035,7 +1015,6 @@ Admitted. (*
     { by eapply IHHLF; eauto. }
     by simpl in R.
 Qed.
-           *)
 
 (* TODO need sigma? *)
 Lemma br_reduce_extract_vs: forall n k lh es s C ts ts2,
@@ -1047,9 +1026,7 @@ Lemma br_reduce_extract_vs: forall n k lh es s C ts ts2,
       length vs = length ts.
 Proof.
   move => n k lh es s C ts ts2 HLF.
-  (* XXX move? *)
   apply lfilled_Ind_Equivalent in HLF.
-Admitted. (* TODO
   generalize dependent ts. generalize dependent ts2.
   generalize dependent C. generalize dependent s.
   dependent induction HLF; subst; move => s C ts2 ts HType HN.
@@ -1063,7 +1040,8 @@ Admitted. (* TODO
     unfold plop2 in H8. move/eqP in H8.
     rewrite HN in H8. inversion H8. subst.
     apply et_to_bet in H3; last by apply const_list_is_basic.
-    apply const_es_exists in H.
+    Fail apply const_es_exists in H.
+Admitted. (* TODO
     destruct H as [vs' H]. subst.
     apply Const_list_typing in H3. simpl in H3.
     rewrite catA in H3. symmetry in H3.
@@ -1106,9 +1084,7 @@ Lemma return_reduce_extract_vs: forall n lh es s C ts ts2,
       length vs = length ts.
 Proof.
   move => n lh es s C ts ts2 HLF.
-  (* XXX move? *)
   apply lfilled_Ind_Equivalent in HLF.
-Admitted. (* TODO
   generalize dependent ts. generalize dependent ts2.
   generalize dependent C. generalize dependent s.
   dependent induction HLF; subst; move => s C ts2 ts HType HN.
@@ -1120,7 +1096,8 @@ Admitted. (* TODO
     destruct H5 as [ts2 [ts2' [H7 H8]]]. subst.
     rewrite HN in H8. inversion H8. subst.
     apply et_to_bet in H3; last by apply const_list_is_basic.
-    apply const_es_exists in H.
+    Fail apply const_es_exists in H.
+Admitted. (* TODO
     destruct H as [vs' H]. subst.
     apply Const_list_typing in H3. simpl in H3.
     rewrite catA in H3. symmetry in H3.
@@ -1326,7 +1303,6 @@ Proof.
         eapply rs_trap => //.
         instantiate (1 := (LH_base [::] [::e])).
         apply lfilled_Ind_Equivalent.
-Admitted. (* TODO
         by apply LfilledBase => //=; apply v_to_e_is_const_list.
     + (* reduce *)
       (* TODO naming *)
@@ -1407,7 +1383,8 @@ Admitted. (* TODO
          Done as a separate lemma. *)
       eapply return_reduce_extract_vs in HLF; eauto.
       instantiate (1 := ts2) in HLF.
-      destruct HLF as [cs [lh' [HConst [HLF2 HLength]]]].
+      Fail destruct HLF as [cs [lh' [HConst [HLF2 HLength]]]].
+Admitted. (* TODO
       repeat eexists.
       apply r_simple.
       eapply rs_return; eauto.
@@ -1560,7 +1537,7 @@ Admitted. (* TODO
     + (* reduce *)
       simpl in H0. right. right. by eauto.
 Qed.
-      *)
+*)
 
 Theorem t_progress: forall s f es ts hs,
     config_typing s f es ts ->
@@ -1568,7 +1545,8 @@ Theorem t_progress: forall s f es ts hs,
     {s' & {f' & {es' & {hs' & reduce hs s f es hs' s' f' es'}}}}.
 Proof.
   move => s f es ts hs HType.
-  inversion HType as [????? Hstyping]. inversion Hstyping as [??????? Hftyping]. inversion Hftyping. subst.
+  inversion HType as [????? Hstyping]. inversion Hstyping as [??????? Hftyping]. Fail inversion Hftyping.
+Admitted. (* TODO subst.
   eapply t_progress_e with (vcs := [::]) (ret := None) (lab := [::]) in H7; eauto.
   - assert (E : tc_local C1 = [::]).
     { by eapply inst_t_context_local_empty; eauto. }
@@ -1581,6 +1559,7 @@ Proof.
   - by eapply s_typing_lf_br; eauto.
   - by eapply s_typing_lf_return; eauto.
 Qed.
+           *)
 
 End Host.
 
