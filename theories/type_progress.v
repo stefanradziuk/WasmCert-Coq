@@ -1546,9 +1546,10 @@ Theorem t_progress: forall s f es ts hs,
     {s' & {f' & {es' & {hs' & reduce hs s f es hs' s' f' es'}}}}.
 Proof.
   move => s f es ts hs HType.
-  inversion HType as [????? Hstyping]. inversion Hstyping as [??????? Hftyping]. inversion Hftyping.
-  Fail eapply t_progress_e with (vcs := [::]) (ret := None) (lab := [::]) in H7; eauto.
-Admitted. (* TODO subst.
+  inversion HType as [????? Hstyping].
+  inversion Hstyping as [??????? Hftyping ? Hetyping].
+  inversion Hftyping. subst.
+  eapply t_progress_e with (vcs := [::]) (ret := None) (lab := [::]) in Hetyping; eauto.
   - assert (E : tc_local C1 = [::]).
     { by eapply inst_t_context_local_empty; eauto. }
     rewrite E. simpl.
@@ -1560,7 +1561,6 @@ Admitted. (* TODO subst.
   - by eapply s_typing_lf_br; eauto.
   - by eapply s_typing_lf_return; eauto.
 Qed.
-           *)
 
 End Host.
 
