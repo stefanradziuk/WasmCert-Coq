@@ -1040,9 +1040,9 @@ Proof.
     unfold plop2 in H8. move/eqP in H8.
     rewrite HN in H8. inversion H8. subst.
     apply et_to_bet in H3; last by apply const_list_is_basic.
-    Fail apply const_es_exists in H.
-Admitted. (* TODO
-    destruct H as [vs' H]. subst.
+    (* TODO i naming (if possible?) *)
+    apply const_es_exists in i.
+    destruct i as [vs' H]. subst.
     apply Const_list_typing in H3. simpl in H3.
     rewrite catA in H3. symmetry in H3.
     apply cat_split in H3. destruct H3.
@@ -1064,15 +1064,14 @@ Admitted. (* TODO
     { instantiate (1 := k.+1).
       repeat (f_equal; try by lias). }
     {  simpl. by eauto. }
-    destruct H0 as [lh2 [HConst [HLF2 HLength]]].
+    destruct H as [lh2 [HConst [HLF2 HLength]]].
     replace (k0.+1+k) with (k0+k.+1); last by lias.
     repeat eexists. repeat split => //; eauto.
-    move lfilled_Ind_Equivalent in HLF2. apply lfilled_Ind_Equivalent.
+    apply lfilled_Ind_Equivalent in HLF2. apply lfilled_Ind_Equivalent.
     instantiate (1 := (LH_rec vs (length ts2) es' lh2 es'')).
     apply LfilledRec => //.
     by apply HLength.
 Qed.
-           *)
 
 (* TODO need sigma? *)
 Lemma return_reduce_extract_vs: forall n lh es s C ts ts2,
@@ -1096,9 +1095,9 @@ Proof.
     destruct H5 as [ts2 [ts2' [H7 H8]]]. subst.
     rewrite HN in H8. inversion H8. subst.
     apply et_to_bet in H3; last by apply const_list_is_basic.
-    Fail apply const_es_exists in H.
-Admitted. (* TODO
-    destruct H as [vs' H]. subst.
+    (* TODO naming *)
+    apply const_es_exists in i.
+    destruct i as [vs' H]. subst.
     apply Const_list_typing in H3. simpl in H3.
     rewrite catA in H3. symmetry in H3.
     apply cat_split in H3. destruct H3.
@@ -1117,14 +1116,13 @@ Admitted. (* TODO
   - invert_e_typing.
     destruct ts0; destruct t1s => //; clear H1.
     edestruct IHHLF; eauto.
-    destruct H0 as [lh2 [HConst [HLF2 HLength]]].
+    destruct H as [lh2 [HConst [HLF2 HLength]]].
     repeat eexists. repeat split => //; eauto.
-    move lfilled_Ind_Equivalent in HLF2. apply lfilled_Ind_Equivalent.
+    apply lfilled_Ind_Equivalent in HLF2. apply lfilled_Ind_Equivalent.
     instantiate (1 := (LH_rec vs (length ts2) es' lh2 es'')).
     apply LfilledRec => //.
     by apply HLength.
 Qed.
-           *)
 
 (* TODO need sigma? *)
 Lemma le_add: forall n m,
