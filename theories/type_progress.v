@@ -56,16 +56,7 @@ Proof.
   destruct vs => //=; eapply rs_trap; try by destruct vs => //=.
   assert (LF : lfilledInd 0 (LH_base (a::vs) [::]) [::AI_trap] (a::vs++[::AI_trap])).
   { by apply LfilledBase. }
-  (* XXX had to do all that instead of apply/lfilledP.
-   * this is not going to work well in larger proofs
-   *)
-  assert (Hrefl
-    : reflectT
-      (lfilledInd 0 (LH_base (a :: vs) [::]) [:: AI_trap] (a :: vs ++ [:: AI_trap]))
-      (lfilled 0 (LH_base (a :: vs) [::]) [:: AI_trap] (a :: vs ++ [:: AI_trap]))
-  ). { apply lfilledP. }
-  instantiate (1 := LH_base (a :: vs) [::]).
-  apply (reflectT_iff Hrefl).
+  apply lfilled_Ind_Equivalent.
   by apply LF.
 Qed.
 
@@ -101,7 +92,7 @@ Lemma reduce_composition: forall s cs f es es0 s' f' es' hs hs',
     reduce hs s f (cs ++ es ++ es0) hs' s' f' (cs ++ es' ++ es0).
 Proof.
   move => s cs f es es0 s' f' es' hs hs' HConst HReduce.
-  Fail eapply r_label; eauto; apply/lfilledP.
+  eapply r_label; eauto; apply lfilled_Ind_Equivalent.
 Admitted.
   (* TODO
   - instantiate (1 := (LH_base cs es0)). instantiate (1 := 0).
@@ -137,7 +128,7 @@ Lemma lfilled0_empty: forall es,
     lfilled 0 (LH_base [::] [::]) es es.
 Proof.
   move => es.
-  Fail apply/lfilledP.
+  apply lfilled_Ind_Equivalent.
 Admitted.
   (* TODO
   assert (LF : lfilledInd 0 (LH_base [::] [::]) es ([::] ++ es ++ [::])); first by apply LfilledBase.
@@ -149,7 +140,7 @@ Lemma label_lfilled1: forall n es es0,
     lfilled 1 (LH_rec [::] n es0 (LH_base [::] [::]) [::]) es [::AI_label n es0 es].
 Proof.
   move => n es es0.
-  Fail apply/lfilledP.
+  apply lfilled_Ind_Equivalent.
 Admitted.
 (* TODO
   replace [:: AI_label n es0 es] with ([::] ++ [::AI_label n es0 es] ++ [::]) => //.
@@ -382,15 +373,16 @@ Lemma lf_composition: forall es es2 e0 lh n,
     exists lh', lfilled n lh' e0 (es ++ es2).
 Proof.
   move => es es2 e0 lh n HLF.
-  Fail move/lfilledP in HLF.
+  (* TODO move? *)
+  apply lfilled_Ind_Equivalent in HLF.
 Admitted. (* TODO
   inversion HLF; subst.
   - exists (LH_base vs (es' ++ es2)).
-    apply/lfilledP.
+    apply lfilled_Ind_Equivalent.
     repeat rewrite -catA.
     by apply LfilledBase.
   - exists (LH_rec vs n0 es' lh' (es'' ++ es2)).
-    apply/lfilledP.
+    apply lfilled_Ind_Equivalent.
     repeat rewrite -catA.
     by apply LfilledRec.
 Qed.
@@ -402,16 +394,17 @@ Lemma lf_composition_left: forall cs es e0 lh n,
     exists lh', lfilled n lh' e0 (cs ++ es).
 Proof.
   move => cs es e0 lh n HConst HLF.
-  Fail move/lfilledP in HLF.
+  (* XXX move? *)
+  apply lfilled_Ind_Equivalent in HLF.
 Admitted. (* TODO
   inversion HLF; subst.
   - exists (LH_base (cs ++ vs) es').
-    apply/lfilledP.
+    apply lfilled_Ind_Equivalent.
     rewrite (catA cs vs).
     apply LfilledBase.
     by apply const_list_concat.
   - exists (LH_rec (cs ++ vs) n0 es' lh' es'').
-    apply/lfilledP.
+    apply lfilled_Ind_Equivalent.
     rewrite (catA cs vs).
     apply LfilledRec => //.
     by apply const_list_concat.
@@ -997,7 +990,8 @@ Proof.
   move => n k lh es s C ts2 HLF.
   generalize dependent ts2. generalize dependent C.
   generalize dependent s.
-  Fail move/lfilledP in HLF.
+  (* XXX move? *)
+  apply lfilled_Ind_Equivalent in HLF.
 Admitted. (* TODO
   dependent induction HLF; move => s C ts2 HType.
   - invert_e_typing.
@@ -1026,7 +1020,8 @@ Lemma return_reduce_return_some: forall n lh es s C ts2,
 Proof.
   move => n lh es s C ts2 HLF.
   generalize dependent s. generalize dependent C. generalize dependent ts2.
-  Fail move/lfilledP in HLF.
+  (* XXX move? *)
+  apply lfilled_Ind_Equivalent in HLF.
 Admitted. (*
   dependent induction HLF; subst; move => ts2 C s HType.
   - invert_e_typing.
@@ -1052,7 +1047,8 @@ Lemma br_reduce_extract_vs: forall n k lh es s C ts ts2,
       length vs = length ts.
 Proof.
   move => n k lh es s C ts ts2 HLF.
-  Fail move/lfilledP in HLF.
+  (* XXX move? *)
+  apply lfilled_Ind_Equivalent in HLF.
 Admitted. (* TODO
   generalize dependent ts. generalize dependent ts2.
   generalize dependent C. generalize dependent s.
@@ -1076,7 +1072,7 @@ Admitted. (* TODO
     exists (v_to_e_list (drop (size (ts1 ++ ts3')) vs')), (LH_base (v_to_e_list (take (size (ts1 ++ ts3')) vs')) es').
     repeat split.
     + by apply v_to_e_is_const_list.
-    + apply/lfilledP.
+    + apply lfilled_Ind_Equivalent.
       rewrite -v_to_e_cat. rewrite -catA.
       rewrite cat_abcd_a_bc_d.
       by apply LfilledBase; apply v_to_e_is_const_list.
@@ -1093,7 +1089,7 @@ Admitted. (* TODO
     destruct H0 as [lh2 [HConst [HLF2 HLength]]].
     replace (k0.+1+k) with (k0+k.+1); last by lias.
     repeat eexists. repeat split => //; eauto.
-    move/lfilledP in HLF2. apply/lfilledP.
+    move lfilled_Ind_Equivalent in HLF2. apply lfilled_Ind_Equivalent.
     instantiate (1 := (LH_rec vs (length ts2) es' lh2 es'')).
     apply LfilledRec => //.
     by apply HLength.
@@ -1110,7 +1106,8 @@ Lemma return_reduce_extract_vs: forall n lh es s C ts ts2,
       length vs = length ts.
 Proof.
   move => n lh es s C ts ts2 HLF.
-  Fail move/lfilledP in HLF.
+  (* XXX move? *)
+  apply lfilled_Ind_Equivalent in HLF.
 Admitted. (* TODO
   generalize dependent ts. generalize dependent ts2.
   generalize dependent C. generalize dependent s.
@@ -1132,7 +1129,7 @@ Admitted. (* TODO
     exists (v_to_e_list (drop (size (ts1 ++ ts2')) vs')), (LH_base (v_to_e_list (take (size (ts1 ++ ts2')) vs')) es').
     repeat split.
     + by apply v_to_e_is_const_list.
-    + apply/lfilledP.
+    + apply lfilled_Ind_Equivalent.
       rewrite -v_to_e_cat. rewrite -catA.
       rewrite cat_abcd_a_bc_d.
       by apply LfilledBase; apply v_to_e_is_const_list.
@@ -1145,7 +1142,7 @@ Admitted. (* TODO
     edestruct IHHLF; eauto.
     destruct H0 as [lh2 [HConst [HLF2 HLength]]].
     repeat eexists. repeat split => //; eauto.
-    move/lfilledP in HLF2. apply/lfilledP.
+    move lfilled_Ind_Equivalent in HLF2. apply lfilled_Ind_Equivalent.
     instantiate (1 := (LH_rec vs (length ts2) es' lh2 es'')).
     apply LfilledRec => //.
     by apply HLength.
@@ -1328,7 +1325,7 @@ Proof.
         apply r_simple.
         eapply rs_trap => //.
         instantiate (1 := (LH_base [::] [::e])).
-        Fail apply/lfilledP.
+        apply lfilled_Ind_Equivalent.
 Admitted. (* TODO
         by apply LfilledBase => //=; apply v_to_e_is_const_list.
     + (* reduce *)
@@ -1336,7 +1333,7 @@ Admitted. (* TODO
       destruct s0 as [s' [f' [es' [hs' HReduce]]]].
       right.
       exists s', f', (es' ++ [::e]), hs'.
-      eapply r_label; eauto; try apply/lfilledP.
+      eapply r_label; eauto; try apply lfilled_Ind_Equivalent.
       * assert (LF : lfilledInd 0 (LH_base [::] [::e]) (v_to_e_list vcs ++ es) ([::] ++ (v_to_e_list vcs ++ es) ++ [::e]));
           first by apply LfilledBase.
         simpl in LF. rewrite -catA in LF. by apply LF.
@@ -1495,8 +1492,8 @@ Admitted. (* TODO
       move => n lh k HLF.
       assert (Inf : k < n.+1). (* FIXME: Proof items to be added here. *)
       { eapply HBI_brDepth.
-      move/lfilledP in HLF.
-      apply/lfilledP.
+      move lfilled_Ind_Equivalent in HLF.
+      apply lfilled_Ind_Equivalent.
       assert (LF : lfilledInd (n.+1) (LH_rec [::] (length ts) e0s lh [::]) [::AI_basic (BI_br k)] ([::] ++ [::AI_label (length ts) e0s es] ++ [::]));
         first by apply LfilledRec.
       rewrite cats0 in LF. simpl in LF.
@@ -1512,8 +1509,8 @@ Admitted. (* TODO
       move => n lh HContra.
       unfold not_lf_return in HNRet.
       eapply HNRet.
-      move/lfilledP in HContra.
-      apply/lfilledP.
+      move lfilled_Ind_Equivalent in HContra.
+      apply lfilled_Ind_Equivalent.
       assert (LF : lfilledInd (n.+1) (LH_rec [::] (length ts) e0s lh [::]) [::AI_basic BI_return] ([::] ++ [::AI_label (length ts) e0s es] ++ [::]));
         first by apply LfilledRec.
       by apply LF.
