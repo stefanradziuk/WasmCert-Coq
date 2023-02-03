@@ -73,6 +73,19 @@ Proof.
   - move=> np1 _. right. by move=> [? ?].
 Defined.
 
+Lemma decidableT_and_conj : forall (P1 P2 : Prop),
+  (* TODO dedupe, sort out /\ vs prod *)
+  decidableT P1 ->
+  decidableT P2 ->
+  decidableT (P1 /\ P2).
+Proof.
+  move=> P1 P2. case.
+  - move=> p1. case.
+    + move=> p2. by left.
+    + move=> np2. right. by move=> [? ?].
+  - move=> np1 _. right. by move=> [? ?].
+Defined.
+
 Lemma decidableT_equiv : forall P1 P2,
   (P1 <--> P2) ->
   decidableT P1 ->

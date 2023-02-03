@@ -849,6 +849,19 @@ Proof.
   by apply: decidableT_equiv; first by apply: lfilled_Ind_Equivalent.
 Defined.
 
+(* TODO move those two out to a Prop/Type common file if end up useful *)
+Lemma not_notT : forall (P : Prop), ~ P -> notT P.
+Proof.
+  intros P HNP. unfold notT. intros HP. destruct (HNP HP).
+Qed.
+
+Lemma decidable_decidableT : forall (P : Prop), decidable P -> decidableT P.
+Proof.
+  intros P [HP|HNP]; unfold decidableT.
+  - left. by apply HP.
+  - right. by apply (not_notT HNP).
+Qed.
+
 (** We can always decide [lfilled 0]. **)
 Lemma lfilled_decidable_base : forall es es' lh,
   decidableT (lfilled 0 lh es es').
@@ -861,17 +874,17 @@ Proof.
     {
       apply: list_search_split_pickableT2.
       - by apply: administrative_instruction_eq_dec.
-        (* TODO cannot apply eq_comparable *)
-      - move=> ? ?. Fail by repeat apply: decidableT_and; apply: eq_comparable.
-Admitted.
-(*
+      - move=> ? ?.
+        apply decidableT_and;
+          try apply decidableT_and_conj;
+          apply decidable_decidableT;
+          apply eq_comparable.
     }
     case.
     + move=> [[vs es''] [E [C [E1 E2]]]]. left. subst. by constructor.
     + move=> nE. right. move=> I. apply: nE. inversion I. subst. by repeat eexists.
   - move=> vs n es'' lh' es'''. right. move=> I. by inversion I.
 Defined.
- *)
 
 (** We can furthermore rebuild the stack [lh] for any [lfilled 0] predicate. **)
 Lemma lfilled_pickable_base : forall es es',
