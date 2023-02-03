@@ -758,29 +758,27 @@ Definition lfilledInd_pickable_rec_gen : forall fes,
   (forall es' lh lh' n0, decidableT (lfilledInd 0 lh (fes n0 lh') es')) ->
   forall es', pickableT2 (fun n lh => lfilledInd n lh (fes n lh) es').
 Proof.
-Admitted.
-(* TODO conversion to Type *)
-(*
   move=> fes D0 es'.
   apply: (@pickableT2_equiv _ _ (fun n lh => lfilledInd n lh (fes (0+n) lh) es')); first by [].
   move: 0 => k.
   have [m E]: { m | lfilled_pickable_rec_gen_measure es' = m }; first by eexists.
   move: fes D0 es' E k. strong induction m. rename X into IH. move=> fes D0 es' E k.
-  have Dcl: forall vs, decidable (const_list vs).
-  { move=> vs. by apply: is_true_decidable. }
+  have Dcl: forall vs, decidableT (const_list vs).
+  { move=> vs. by apply: is_true_decidableT. }
   (** First, we check whether we can set [n = 0]. **)
   have P0: pickableT2 (fun vs es'' =>
                        let lh := LH_base vs es'' in
                        let es := fes k lh in
-                       es' = vs ++ es ++ es'' /\ const_list vs /\ lfilledInd 0 lh es es').
+                       (es' = vs ++ es ++ es'') ** (const_list vs) ** (lfilledInd 0 lh es es')).
   {
-    have: pickable3 (fun vs es es'' =>
-      es' = vs ++ es ++ es'' /\ let lh := LH_base vs es'' in
-      es = fes k lh /\ const_list vs /\ lfilledInd 0 lh es es').
+    have: pickableT3 (fun vs es es'' =>
+      (es' = vs ++ es ++ es'') ** (let lh := LH_base vs es'' in
+      (es = fes k lh) ** (const_list vs) ** (lfilledInd 0 lh es es'))).
     {
       apply: list_split_pickable3_gen. move=> vs es es'' Ees /=.
       case E': (es == fes k (LH_base vs es'')); move/eqP: E' => E'.
-      - rewrite E'. repeat apply: decidable_and => //. by apply: eq_comparable.
+      - rewrite E'. repeat apply: decidable_and => //. Fail by apply: eq_comparable.
+        give_up. (* TODO *)
       - right. by move=> [Ees2 [Cl I]].
     }
     case.
@@ -796,18 +794,20 @@ Admitted.
   move=> nE.
   (** Otherwise, we have to apply [LfilledRec]. **)
   have Dparse: forall es' : seq administrative_instruction,
-    decidable (exists n es1 LI es2, es' = [:: AI_label n es1 LI] ++ es2).
+    decidableT (exists n es1 LI es2, es' = [:: AI_label n es1 LI] ++ es2).
   {
     clear. move=> es'.
     have Pparse: pickable4 (fun n es1 LI es2 => es' = [:: AI_label n es1 LI] ++ es2).
     {
       let no := by intros; right; intros (?&?&?&?&?) in
       (case es'; first by no); case; try by no.
-      move=> n l1 l2 l3. left. by exists (n, l1, l2, l3).
+      move=> n
+ l1 l2 l3. left. by exists (n, l1, l2, l3).
     }
-    convert_pickable Pparse.
+    Fail convert_pickable Pparse.
+    give_up. (* TODO *)
   }
-  case: (list_split_pickable2 (fun vs es => decidable_and (Dcl vs) (Dparse es)) es').
+  case: (list_split_pickableT2 (fun vs es => decidableT_and (Dcl vs) (Dparse es)) es').
   - move=> [[vs es''] [E1 [C Ex]]].
     destruct es'' as [| [| | | n es1 LI |] es2];
       try solve [ exfalso; move: Ex => [? [? [? [? E']]]]; inversion E' ].
@@ -819,24 +819,25 @@ Admitted.
       - by apply: lfilled_pickable_rec_gen_measure_concat_r.
     }
     set fes' := fun k lh => fes (k + 1) (LH_rec vs n es1 lh es2).
-    have D1: forall es' lh lh' n0, decidable (lfilledInd 0 lh (fes' n0 lh') es').
+    have D1: forall es' lh lh' n0, decidableT (lfilledInd 0 lh (fes' n0 lh') es').
     { move=> ? ? ? ?. by apply: D0. }
     move: (IH _ I_LI fes' D1 LI (erefl _) k) => [[[n' lh] LF]|NP].
     - eapply LfilledRec with (vs := vs) in LF => //.
       left. exists (n'.+1, LH_rec vs n es1 lh es2).
       move: LF. rewrite /fes'. rewrite_by (k + n' + 1 = k + n'.+1) => /= LF. by apply: LF.
     - right. move=> [n' [lh FI]]. apply: NP. inversion FI; subst.
-      + exfalso. apply: nE. exists vs0. exists es'0. repeat split => //.
+        (* XXX misaligned goals here? *)
+      + exfalso. Fail apply: nE. give_up. (* exists vs0. exists es'0. repeat split => //.
         * rewrite -H. by rewrite_by (k + 0 = k).
-        * by rewrite_by (k = k + 0).
+        * by rewrite_by (k = k + 0). *)
       + apply const_list_concat_inv in H => //. move: H => [? [E ?]]. inversion E; subst.
-        exists k0. eexists. rewrite /fes'. rewrite_by (k + k0 + 1 = k + k0.+1). by apply: H4.
+        exists k0. eexists. rewrite /fes'. rewrite_by (k + k0 + 1 = k + k0.+1).
+        Fail by apply: H4. give_up. (* TODO *)
   - move=> nE'. right. move=> [n [lh I]]. inversion I; subst.
     + apply: nE. do 2 eexists. rewrite_by (k + 0 = k). repeat split; try eassumption.
       by apply: LfilledBase.
     + apply: nE'. by repeat eexists.
-Defined.
- *)
+Admitted.
 
 Definition lfilled_pickable_rec_gen : forall fes,
   (forall es' lh lh' n0, decidableT (lfilled 0 lh (fes n0 lh') es')) ->
