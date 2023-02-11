@@ -777,8 +777,14 @@ Proof.
     {
       apply: list_split_pickable3_gen. move=> vs es es'' Ees /=.
       case E': (es == fes k (LH_base vs es'')); move/eqP: E' => E'.
-      - rewrite E'. repeat apply: decidable_and => //. Fail by apply: eq_comparable.
-        give_up. (* TODO *)
+      - repeat apply: decidableT_and => //.
+        (* XXX why doesn't Logic.eq_refl not cut it here? *)
+        * unfold decidableT; auto.
+        (* XXX this is too manual.
+         * any way to use eq_comparable as previously? *)
+        * destruct (Dcl vs) as [HConstVs | HNotConstVs].
+          + left. rewrite Ees. apply (LfilledBase _ _ HConstVs).
+          + right. intros HLF. inversion HLF as [??? HConstVs|]. auto.
       - right. by move=> [Ees2 [Cl I]].
     }
     case.
