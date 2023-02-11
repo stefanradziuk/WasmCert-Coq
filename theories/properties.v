@@ -27,6 +27,26 @@ Let e_is_trap := @e_is_trap host_function.
 Let es_is_trap := @es_is_trap host_function.*)
 
 
+(* TODO move the notT lemmas and decidable_decidableT out
+ * to a Prop/Type/decidableT common file if they end up useful *)
+Lemma equiv_void_False : iffT False void.
+Proof.
+  split; (intros H; inversion H).
+Qed.
+
+Lemma not_notT : forall (P : Prop), ~ P -> notT P.
+Proof.
+  intros P HNP. intros HP. destruct (HNP HP).
+Qed.
+
+Lemma decidable_decidableT : forall (P : Prop), decidable P -> decidableT P.
+Proof.
+  intros P [HP|HNP]; unfold decidableT.
+  - left. by apply HP.
+  - right. by apply (not_notT HNP).
+Qed.
+
+
 Lemma const_list_concat: forall vs1 vs2,
     const_list vs1 ->
     const_list vs2 ->
@@ -837,10 +857,10 @@ Proof.
       left. exists (n'.+1, LH_rec vs n es1 lh es2).
       move: LF. rewrite /fes'. rewrite_by (k + n' + 1 = k + n'.+1) => /= LF. by apply: LF.
     - right. move=> [n' [lh FI]]. apply: NP. inversion FI; subst.
-        (* XXX misaligned goals here? *)
-      + exfalso. Fail apply: nE. give_up. (* exists vs0. exists es'0. repeat split => //.
+      + exfalso. apply equiv_void_False. apply: nE.
+        exists vs0. exists es'0. repeat split => //.
         * rewrite -H. by rewrite_by (k + 0 = k).
-        * by rewrite_by (k = k + 0). *)
+        * by rewrite_by (k = k + 0).
       + apply const_list_concat_inv in H => //. move: H => [? [E ?]]. inversion E; subst.
         exists k0. eexists. rewrite /fes'. rewrite_by (k + k0 + 1 = k + k0.+1).
         Fail by apply: H4. give_up. (* TODO *)
@@ -860,19 +880,6 @@ Proof.
   apply: lfilledInd_pickable_rec_gen_T => es'' lh lh' n0.
   by apply: decidableT_equiv; first by apply: lfilled_Ind_Equivalent.
 Defined.
-
-(* TODO move those two out to a Prop/Type common file if end up useful *)
-Lemma not_notT : forall (P : Prop), ~ P -> notT P.
-Proof.
-  intros P HNP. unfold notT. intros HP. destruct (HNP HP).
-Qed.
-
-Lemma decidable_decidableT : forall (P : Prop), decidable P -> decidableT P.
-Proof.
-  intros P [HP|HNP]; unfold decidableT.
-  - left. by apply HP.
-  - right. by apply (not_notT HNP).
-Qed.
 
 (** We can always decide [lfilled 0]. **)
 Lemma lfilled_decidable_base : forall es es' lh,
