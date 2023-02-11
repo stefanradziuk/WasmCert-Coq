@@ -800,18 +800,23 @@ Proof.
   move=> nE.
   (** Otherwise, we have to apply [LfilledRec]. **)
   have Dparse: forall es' : seq administrative_instruction,
-    decidableT (exists n es1 LI es2, es' = [:: AI_label n es1 LI] ++ es2).
+    decidableT ({n & {es1 & {LI & {es2 & es' = [:: AI_label n es1 LI] ++ es2}}}}).
   {
     clear. move=> es'.
-    have Pparse: pickable4 (fun n es1 LI es2 => es' = [:: AI_label n es1 LI] ++ es2).
+    have Pparse: pickableT4 (fun n es1 LI es2 => es' = [:: AI_label n es1 LI] ++ es2).
     {
       let no := by intros; right; intros (?&?&?&?&?) in
       (case es'; first by no); case; try by no.
       move=> n
  l1 l2 l3. left. by exists (n, l1, l2, l3).
     }
-    Fail convert_pickable Pparse.
-    give_up. (* TODO *)
+    (* XXX ideally should rewrite the convert_pickable ltac
+     * (and its dependencies) but this works for now *)
+    apply pickable4_weaken_T in Pparse.
+    apply pickable3_weaken_T in Pparse.
+    apply pickable2_weaken_T in Pparse.
+    apply pickable_decidable_T in Pparse.
+    apply Pparse.
   }
   case: (list_split_pickableT2 (fun vs es => decidableT_and (Dcl vs) (Dparse es)) es').
   - move=> [[vs es''] [E1 [C Ex]]].

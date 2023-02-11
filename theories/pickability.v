@@ -136,6 +136,11 @@ Definition pickableT2 A1 A2 (P : A1 -> A2 -> Type) :=
 
 Definition pickableT3 A1 A2 A3 (P : A1 -> A2 -> A3 -> Type) :=
   sum {x & let '(x1, x2, x3) := x in P x1 x2 x3} (notT {x1 & {x2 & {x3 & P x1 x2 x3}}}).
+
+Definition pickableT4 A1 A2 A3 A4 (P : A1 -> A2 -> A3 -> A4 -> Type) :=
+  (* sum {x & let '(x1, x2, x3) := x in P x1 x2 x3} (notT {x1 & {x2 & {x3 & P x1 x2 x3}}}). *)
+  sum { x & let '(x1, x2, x3, x4) := x in P x1 x2 x3 x4 } (notT {x1 & {x2 & {x3 & {x4 & P x1 x2 x3 x4 }}}}).
+
 (** * Lemmas about pickability **)
 
 Lemma pickable_decidable : forall A (P : A -> Prop),
@@ -266,16 +271,6 @@ Proof.
   - move=> nE. right. move=> [x1 [x2 p]]. apply: nE. exists x1. by exists x2.
 Defined.
 
-(* TODO dedupe/reorganise *)
-Lemma pickable2_weaken_T : forall A1 A2 (P : A1 -> A2 -> Type),
-  pickableT2 P ->
-  pickableT (fun a1 => {a2 & P a1 a2}).
-Proof.
-  move=> A1 A2 P. case.
-  - move=> [[x1 x2] p]. left. exists x1. by exists x2.
-  - move=> nE. right. move=> [x1 [x2 p]]. apply: nE. exists x1. by exists x2.
-Defined.
-
 Lemma pickable3_weaken : forall A1 A2 A3 (P : A1 -> A2 -> A3 -> Prop),
   pickable3 P ->
   pickable2 (fun a1 a2 => exists a3, P a1 a2 a3).
@@ -303,6 +298,36 @@ Proof.
   - move=> [[[[[x1 x2] x3] x4] x5] p]. left. exists (x1, x2, x3, x4). by exists x5.
   - move=> nE. right. move=> [x1 [x2 [x3 [x4 [x5 p]]]]]. apply: nE.
     exists x1. exists x2. exists x3. exists x4. by exists x5.
+Defined.
+
+(* Type versions of weakening lemmas
+ * TODO dedupe/reorganise *)
+Lemma pickable2_weaken_T : forall A1 A2 (P : A1 -> A2 -> Type),
+  pickableT2 P ->
+  pickableT (fun a1 => {a2 & P a1 a2}).
+Proof.
+  move=> A1 A2 P. case.
+  - move=> [[x1 x2] p]. left. exists x1. by exists x2.
+  - move=> nE. right. move=> [x1 [x2 p]]. apply: nE. exists x1. by exists x2.
+Defined.
+
+Lemma pickable3_weaken_T : forall A1 A2 A3 (P : A1 -> A2 -> A3 -> Type),
+  pickableT3 P ->
+  pickableT2 (fun a1 a2 => {a3 & P a1 a2 a3}).
+Proof.
+  move=> A1 A2 A3 P. case.
+  - move=> [[[x1 x2] x3] p]. left. exists (x1, x2). by exists x3.
+  - move=> nE. right. move=> [x1 [x2 [x3 p]]]. apply: nE. exists x1. exists x2. by exists x3.
+Defined.
+
+Lemma pickable4_weaken_T : forall A1 A2 A3 A4 (P : A1 -> A2 -> A3 -> A4 -> Type),
+  pickableT4 P ->
+  pickableT3 (fun a1 a2 a3 => {a4 & P a1 a2 a3 a4}).
+Proof.
+  move=> A1 A2 A3 A4 P. case.
+  - move=> [[[[x1 x2] x3] x4] p]. left. exists (x1, x2, x3). by exists x4.
+  - move=> nE. right. move=> [x1 [x2 [x3 [x4 p]]]]. apply: nE.
+    exists x1. exists x2. exists x3. by exists x4.
 Defined.
 
 Lemma pickable_augment : forall A1 A2 (P : A2 -> Prop),
@@ -491,7 +516,7 @@ Ltac convert_pickable H :=
   | |- ?g =>
     let ag := pickable_arity g in
     let rec aux H :=
-			let Ht := type of H in
+      let Ht := type of H in
       let aH := pickable_arity Ht in
       let le := eval compute in (Nat.leb ag aH) in
       lazymatch le with
@@ -534,3 +559,6 @@ Ltac convert_pickable H :=
     aux H
   end.
 
+(* TODO Tactics: type version?
+ * the tactics don't seem to be used in very many places but it might be
+ * cleaner to have a T version instead of proving things manually *)
