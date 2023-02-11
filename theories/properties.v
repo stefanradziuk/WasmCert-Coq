@@ -26,14 +26,8 @@ Let to_e_list := @to_e_list host_function.
 Let e_is_trap := @e_is_trap host_function.
 Let es_is_trap := @es_is_trap host_function.*)
 
-
 (* TODO move the notT lemmas and decidable_decidableT out
  * to a Prop/Type/decidableT common file if they end up useful *)
-Lemma equiv_void_False : iffT False void.
-Proof.
-  split; (intros H; inversion H).
-Qed.
-
 Lemma not_notT : forall (P : Prop), ~ P -> notT P.
 Proof.
   intros P HNP. intros HP. destruct (HNP HP).
@@ -851,7 +845,7 @@ Proof.
       left. exists (n'.+1, LH_rec vs n es1 lh es2).
       move: LF. rewrite /fes'. rewrite_by (k + n' + 1 = k + n'.+1) => /= LF. by apply: LF.
     - right. move=> [n' [lh FI]]. apply: NP. inversion FI; subst.
-      + exfalso. apply equiv_void_False. apply: nE.
+      + exfalso. apply equiv_Empty_set_False. apply: nE.
         exists vs0. exists es'0. repeat split => //.
         * rewrite -H. by rewrite_by (k + 0 = k).
         * by rewrite_by (k = k + 0).

@@ -20,6 +20,7 @@ Notation "P <--> Q" := (iffT P Q) (at level 95, right associativity).
 Hint Unfold notT : core.
 Hint Unfold iffT : core.
 
+(* TODO reuse equiv_Empty_set_False *)
 Definition Empty_set_imp_False : Empty_set -> False.
 Proof. intro H. inversion H. Qed.
 

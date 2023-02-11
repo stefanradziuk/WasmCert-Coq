@@ -1564,3 +1564,11 @@ Qed.
 
 End Host.
 
+(* The following axiom must be realized in the extracted
+ * code: host_application_exists.
+ *  [extraction-axiom-to-realize,extraction] *)
+
+From Coq Require Import Extraction.
+
+Extraction Language Haskell.
+Recursive Extraction t_progress.

@@ -13,6 +13,10 @@ Unset Printing Implicit Defensive.
 (* XXX do the extra spaces here make a difference? *)
 Notation " P ** Q " := (prod P Q) (at level 5, right associativity).
 
+(* TODO move to a Type utils common file *)
+Lemma equiv_Empty_set_False : iffT False Empty_set.
+Proof. split; (intros H; inversion H). Qed.
+
 (** * Structures **)
 
 Lemma Z_eqP : Equality.axiom Coqlib.zeq.
@@ -989,18 +993,22 @@ Proof.
   have D1: forall l23 l1, l = l1 ++ l23 -> pickableT2 (fun l2 l3 => (l23 = l2 ++ l3) ** (P l1 l2 l3)).
   { move=> l23 l1 E. apply: list_split_pickableT2_gen. move=> ? ? E'. subst. by apply D. }
   have: pickableT2 (fun l1 l23 => (l = l1 ++ l23) ** {l2 & {l3 & (l23 = l2 ++ l3) ** (P l1 l2 l3)}}).
-Admitted.
-(* TODO
- * need to get convert_pickable working -- so basically convert all pickable* into pickableT
-  { apply: list_split_pickableT2_gen. move=> l1 l23 E. by convert_pickable (D1 _ _ E). }
+  {
+    apply: list_split_pickableT2_gen. move=> l1 l23 E.
+    (* TODO could be cleaner if convert_pickable gets converted to pickableT
+     * alt extract this out into some lemma
+     * by convert_pickable (D1 _ _ E). *)
+    remember (D1 l23 l1 E) as D1'. destruct HeqD1'.
+    apply pickable2_weaken_T in D1'. apply pickable_decidable_T in D1'. apply D1'.
+  }
   case.
   - move=> [[l1 l23] [E1 H]]. left. case (D1 _ _ E1).
     + move=> [[l2 l3] [E2 p]]. exists (l1, l2, l3). by subst.
-    + move=> Ex. exfalso. apply: Ex. move: H => [l2 [l3 [E2 p]]]. exists l2. by exists l3.
+    + move=> Ex. exfalso. apply equiv_Empty_set_False.
+      apply: Ex. move: H => [l2 [l3 [E2 p]]]. exists l2. by exists l3.
   - move=> Ex. right. move=> [l1 [l2 [l3 [E p]]]]. apply: Ex. exists l1. exists (l2 ++ l3).
     split => //. by repeat eexists.
 Defined.
- *)
 
 (* XXX unused?
 Lemma list_split_pickable3 : forall A (P : seq A -> seq A -> seq A -> Prop),
