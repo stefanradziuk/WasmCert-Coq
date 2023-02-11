@@ -767,12 +767,6 @@ Proof.
   move=> n es LI LI'. rewrite /lfilled_pickable_rec_gen_measure /=. by apply: leq_maxl.
 Qed.
 
-(** T version of the below **)
-Definition lfilledInd_pickable_rec_gen_T : forall fes,
-  (forall es' lh lh' n0, decidableT (lfilledInd 0 lh (fes n0 lh') es')) ->
-  forall es', pickableT2 (fun n lh => lfilledInd n lh (fes n lh) es').
-Admitted.
-
 (** A helper definition for [lfilled_decidable_rec]. **)
 Definition lfilledInd_pickable_rec_gen : forall fes,
   (forall es' lh lh' n0, decidableT (lfilledInd 0 lh (fes n0 lh') es')) ->
@@ -863,12 +857,12 @@ Proof.
         * by rewrite_by (k = k + 0).
       + apply const_list_concat_inv in H => //. move: H => [? [E ?]]. inversion E; subst.
         exists k0. eexists. rewrite /fes'. rewrite_by (k + k0 + 1 = k + k0.+1).
-        Fail by apply: H4. give_up. (* TODO *)
+        by apply: X.  (* TODO explicitly name X *)
   - move=> nE'. right. move=> [n [lh I]]. inversion I; subst.
     + apply: nE. do 2 eexists. rewrite_by (k + 0 = k). repeat split; try eassumption.
       by apply: LfilledBase.
     + apply: nE'. by repeat eexists.
-Admitted.
+Qed.
 
 Definition lfilled_pickable_rec_gen : forall fes,
   (forall es' lh lh' n0, decidableT (lfilled 0 lh (fes n0 lh') es')) ->
@@ -877,7 +871,7 @@ Proof.
   move=> fes D0 es'.
   apply: (@pickableT2_equiv _ _ (fun n lh => lfilledInd n lh (fes (0+n) lh) es')).
   { move=> n lh. by split; apply lfilled_Ind_Equivalent. }
-  apply: lfilledInd_pickable_rec_gen_T => es'' lh lh' n0.
+  apply: lfilledInd_pickable_rec_gen => es'' lh lh' n0.
   by apply: decidableT_equiv; first by apply: lfilled_Ind_Equivalent.
 Defined.
 
