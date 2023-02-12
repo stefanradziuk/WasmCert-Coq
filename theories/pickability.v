@@ -49,7 +49,7 @@ Lemma decidableT_and : forall P1 P2,
   (* TODO sort out ** notation *)
   decidableT P1 ->
   decidableT P2 ->
-  decidableT (prod P1 P2).
+  decidableT (P1 ** P2).
 Proof.
   move=> P1 P2. case.
   - move=> p1. case.

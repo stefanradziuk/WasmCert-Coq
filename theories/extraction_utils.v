@@ -6,8 +6,10 @@ Unset Printing Implicit Defensive.
 
 (* TODO file naming -- type-logic / type-prop utils? *)
 
-(* XXX do the extra spaces here make a difference? *)
-Notation " P ** Q " := (prod P Q) (at level 5, right associativity).
+(* TODO ideally would just use (P * Q) (the default for prod)
+ * but it clashes with nat multiplication *)
+Notation "P ** Q" := (prod P Q) (at level 70, right associativity) : type_scope.
+(* Close Scope nat_scope. *)
 
 (* Basic logic ops for Type *)
 (* XXX is there something similar in stdlib? Search didn't return anything *)

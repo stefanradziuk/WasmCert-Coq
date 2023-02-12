@@ -510,7 +510,7 @@ Fixpoint es_is_basic (es: seq administrative_instruction) : Type :=
   match es with
   | [::] => True
   | e :: es' =>
-    (e_is_basic e) ** (es_is_basic es')
+    e_is_basic e ** es_is_basic es'
   end.
 
 (** [v_to_e_list]: 
