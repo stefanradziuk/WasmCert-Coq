@@ -2,27 +2,11 @@
 (* (C) M. Bodin - see LICENSE.txt *)
 
 From mathcomp Require Import ssreflect ssrbool eqtype.
+From Wasm Require Import extraction_utils.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-
-(* Basic logic ops for Type *)
-(* TODO! move those into a separate file *)
-(* XXX is there something similar in stdlib? Search didn't return anything *)
-(* TODO n-ary sigtype notation? *)
-Definition notT (T : Type) : Type := T -> Empty_set.
-Definition decidableT (T : Type) : Type := T + notT T.
-Definition iffT (A B : Type) : Type := prod (A -> B) (B -> A).
-Notation "P <--> Q" := (iffT P Q) (at level 95, right associativity).
-(* XXX resolve deprecation warning
- * used this to get not-like behaviour for auto tactics but *)
-Hint Unfold notT : core.
-Hint Unfold iffT : core.
-
-(* TODO reuse equiv_Empty_set_False *)
-Definition Empty_set_imp_False : Empty_set -> False.
-Proof. intro H. inversion H. Qed.
 
 (** * General lemmas about decidability **)
 

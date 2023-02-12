@@ -4,18 +4,11 @@
 From Coq Require Import Lia.
 From mathcomp Require Import ssreflect ssrnat ssrbool seq eqtype.
 From compcert Require Integers.
-From Wasm Require Export pickability.
+From Wasm Require Export pickability extraction_utils.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-
-(* XXX do the extra spaces here make a difference? *)
-Notation " P ** Q " := (prod P Q) (at level 5, right associativity).
-
-(* TODO move to a Type utils common file *)
-Lemma equiv_Empty_set_False : iffT False Empty_set.
-Proof. split; (intros H; inversion H). Qed.
 
 (** * Structures **)
 

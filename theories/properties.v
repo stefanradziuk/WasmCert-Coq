@@ -2,6 +2,7 @@
 (* (C) Rao Xiaojia, M. Bodin - see LICENSE.txt *)
 
 From Wasm Require Export datatypes_properties operations typing opsem common.
+From Wasm Require Import extraction_utils.
 From mathcomp Require Import ssreflect ssrfun ssrnat ssrbool eqtype seq.
 From StrongInduction Require Import StrongInduction.
 From Coq Require Import Bool Program.Equality.
@@ -25,21 +26,6 @@ Let es_is_basic := @es_is_basic host_function.
 Let to_e_list := @to_e_list host_function.
 Let e_is_trap := @e_is_trap host_function.
 Let es_is_trap := @es_is_trap host_function.*)
-
-(* TODO move the notT lemmas and decidable_decidableT out
- * to a Prop/Type/decidableT common file if they end up useful *)
-Lemma not_notT : forall (P : Prop), ~ P -> notT P.
-Proof.
-  intros P HNP. intros HP. destruct (HNP HP).
-Qed.
-
-Lemma decidable_decidableT : forall (P : Prop), decidable P -> decidableT P.
-Proof.
-  intros P [HP|HNP]; unfold decidableT.
-  - left. by apply HP.
-  - right. by apply (not_notT HNP).
-Qed.
-
 
 Lemma const_list_concat: forall vs1 vs2,
     const_list vs1 ->
