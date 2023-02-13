@@ -1572,7 +1572,18 @@ Module ProgressExtract.
 
 From Coq Require Import Program.Equality ZArith_base.
 
+Variable host_function : eqType.
+Variable host_instance : host host_function.
+
 Definition t_progress := t_progress.
+
+(*
+ * TODO should be instantiating t_progress with something of type
+ * "Equality.sort (host_state ?host_instance)".
+ * to instantiate variables from the previous module
+ * Definition t_progress := t_progress (host host_function).
+ * Check t_progress.
+ *)
 
 Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
 
@@ -1587,8 +1598,6 @@ Definition add_2_7_bis : seq basic_instruction := [::
   BI_const (i32_of_Z (7)%Z);
   BI_binop T_i32 (Binop_i BOI_add)
   ].
-
-Variable host_function : eqType.
 
 Let store_record := store_record host_function.
 
@@ -1656,4 +1665,4 @@ End ProgressExtract.
 From Coq Require Import Extraction.
 
 Extraction Language Haskell.
-Recursive Extraction t_progress.
+Extraction "progress_extracted" ProgressExtract.
