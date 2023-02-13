@@ -1568,6 +1568,91 @@ End Host.
  * code: host_application_exists.
  *  [extraction-axiom-to-realize,extraction] *)
 
+Module ProgressExtract.
+
+From Coq Require Import Program.Equality ZArith_base.
+
+Definition t_progress := t_progress.
+
+Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
+
+Definition add_2_7 : seq administrative_instruction := [::
+  AI_basic (BI_const (i32_of_Z (2)%Z));
+  AI_basic (BI_const (i32_of_Z (7)%Z));
+  AI_basic (BI_binop T_i32 (Binop_i BOI_add))
+  ].
+
+Definition add_2_7_bis : seq basic_instruction := [::
+  BI_const (i32_of_Z (2)%Z);
+  BI_const (i32_of_Z (7)%Z);
+  BI_binop T_i32 (Binop_i BOI_add)
+  ].
+
+Variable host_function : eqType.
+
+Let store_record := store_record host_function.
+
+Let emp_store_record : store_record := {|
+  s_funcs   := [::];
+  s_tables  := [::];
+  s_mems    := [::];
+  s_globals := [::];
+|}.
+
+Let emp_instance : instance := {|
+  inst_types  := [::];
+  inst_funcs  := [::];
+  inst_tab    := [::];
+  inst_memory := [::];
+  inst_globs  := [::];
+|}.
+
+Let emp_frame : frame := {|
+  f_locs := [::];
+  f_inst := emp_instance;
+|}.
+
+Let emp_context : t_context := {|
+  tc_types_t := [::];
+  tc_func_t  := [::];
+  tc_global  := [::];
+  tc_table   := [::];
+  tc_memory  := [::];
+  tc_local   := [::]; (* ? *)
+  tc_label   := [::];
+  tc_return  := None;
+  (* tc_return  := Some [::T_i32]; *)
+|}.
+
+(* Let emp_context' : t_context := upd_local emp_context [::T_i32]. *)
+
+Theorem H_be_typing_add_2_7 : be_typing emp_context add_2_7_bis (Tf [::] [:: T_i32]).
+Proof.
+  apply bet_composition with
+    (es := [:: BI_const (i32_of_Z (2)%Z); BI_const (i32_of_Z (7)%Z)])
+    (t2s := [:: T_i32; T_i32]).
+    - apply bet_composition with
+      (es := [:: BI_const (i32_of_Z (2)%Z)])
+      (t2s := [:: T_i32]).
+      + apply bet_const.
+      + apply bet_weakening with (ts := [:: T_i32]).
+        apply bet_const.
+    - apply bet_binop. apply Binop_i32_agree.
+Qed.
+
+Theorem H_config_typing_add_2_7 : config_typing emp_store_record emp_frame add_2_7 [:: T_i32].
+Proof.
+  apply mk_config_typing.
+  - repeat split; auto. apply TProp.Forall_nil.
+  - apply mk_s_typing with (C := emp_context) (C0 := emp_context); auto.
+    Print mk_frame_typing.
+    apply mk_frame_typing with (i := emp_instance) (C := emp_context); auto.
+  - apply ety_a with (bes := add_2_7_bis).
+    apply H_be_typing_add_2_7.
+Qed.
+
+End ProgressExtract.
+
 From Coq Require Import Extraction.
 
 Extraction Language Haskell.
