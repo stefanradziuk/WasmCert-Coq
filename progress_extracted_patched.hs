@@ -1,6 +1,18 @@
 {-# OPTIONS_GHC -cpp -XMagicHash #-}
 {- For Hugs, use the option -F"cpp -P -traditional" -}
 
+-- TODO: using GHC.Base.undefined for `hs`:
+-- λ x = t_progress host_function host_instance emp_store_record emp_frame add_2_7 ts_add_2_7 GHC.Base.undefined h_config_typing_add_2_7
+-- λ :t x
+-- x :: Sum
+--        Terminal_form
+--        (SigT
+--           (Store_record GHC.Exts.Any)
+--           (SigT
+--              Frame
+--              (SigT
+--                 (List Administrative_instruction) (SigT GHC.Exts.Any Reduce))))
+
 module Progress_extracted where
 
 import qualified Prelude
