@@ -1568,12 +1568,13 @@ End Host.
  * code: host_application_exists.
  *  [extraction-axiom-to-realize,extraction] *)
 
-Module ProgressExtract.
-
 From Coq Require Import Program.Equality ZArith_base.
+
+Module ProgressExtract.
 
 Variable host_function : eqType.
 Variable host_instance : host host_function.
+Let host_state := host_state host_instance.
 
 Definition t_progress := t_progress.
 
@@ -1647,7 +1648,7 @@ Proof.
       + apply bet_weakening with (ts := [:: T_i32]).
         apply bet_const.
     - apply bet_binop. apply Binop_i32_agree.
-Qed.
+Defined.
 
 Theorem H_config_typing_add_2_7 : config_typing emp_store_record emp_frame add_2_7 [:: T_i32].
 Proof.
@@ -1658,11 +1659,13 @@ Proof.
     apply mk_frame_typing with (i := emp_instance) (C := emp_context); auto.
   - apply ety_a with (bes := add_2_7_bis).
     apply H_be_typing_add_2_7.
-Qed.
+Defined.
+
+Definition ts_add_2_7 := [:: T_i32].
 
 End ProgressExtract.
 
 From Coq Require Import Extraction.
 
 Extraction Language Haskell.
-Extraction "progress_extracted" ProgressExtract.
+Extraction "progress_extracted" ProgressExtract DummyHost DummyHosts.
