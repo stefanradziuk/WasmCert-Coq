@@ -1562,6 +1562,12 @@ Proof.
   - by eapply s_typing_lf_return; eauto.
 Qed.
 
+Definition interpret_one_step s f es ts hs (H_config_typing : config_typing s f es ts) : seq administrative_instruction
+  := match t_progress hs H_config_typing with
+     | inl _ => es (* terminal form case *)
+     | inr (existT _ (existT _ (existT es' _))) => es'
+     end.
+
 End Host.
 
 (* The following axiom must be realized in the extracted
@@ -1577,14 +1583,7 @@ Variable host_instance : host host_function.
 Let host_state := host_state host_instance.
 
 Definition t_progress := t_progress.
-
-(*
- * TODO should be instantiating t_progress with something of type
- * "Equality.sort (host_state ?host_instance)".
- * to instantiate variables from the previous module
- * Definition t_progress := t_progress (host host_function).
- * Check t_progress.
- *)
+Definition interpret_one_step := interpret_one_step.
 
 Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
 
@@ -1664,6 +1663,24 @@ Defined.
 Definition ts_add_2_7 := [:: T_i32].
 
 End ProgressExtract.
+
+(*
+ * to single-step reduce add_2_7 in haskell:
+ * λ :f add_2_7
+ * add_2_7 = Cons
+ *             (AI_basic (BI_const (VAL_int32 (Zpos (XO XH)))))
+ *             (Cons
+ *                (AI_basic (BI_const (VAL_int32 (Zpos (XI (XI XH))))))
+ *                (Cons (AI_basic (BI_binop T_i32 (Binop_i0 BOI_add))) Nil))
+ * λ add_2_7' = interpret_one_step host_function host_instance emp_store_record emp_frame add_2_7 ts_add_2_7 (unsafeCoerce Tt) h_config_typing_add_2_7
+ * λ :f add_2_7'
+ * add_2_7' = Cons
+ *              (AI_basic (BI_const (VAL_int32 (Zpos (XI (XO (XO XH))))))) Nil
+ *
+ * NOTE the use of (unsafeCoerce Tt) for hs.
+ * It's probably fine as it's expecting a singleton there (is it?) but might
+ * break if progress tries to inspect hs.
+ *)
 
 From Coq Require Import Extraction.
 
