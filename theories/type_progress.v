@@ -1562,6 +1562,8 @@ Proof.
   - by eapply s_typing_lf_return; eauto.
 Qed.
 
+(* NOTE: leaving this defn in this module for now to avoid dealing with
+ * implicit arguments *)
 Definition interpret_one_step s f es ts hs (H_config_typing : config_typing s f es ts) : seq administrative_instruction
   := match t_progress hs H_config_typing with
      | inl _ => es (* terminal form case *)
@@ -1685,4 +1687,4 @@ End ProgressExtract.
 From Coq Require Import Extraction.
 
 Extraction Language Haskell.
-Extraction "progress_extracted" ProgressExtract DummyHost DummyHosts.
+Extraction "progress_extracted" ProgressExtract DummyHost.
