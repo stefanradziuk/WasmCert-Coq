@@ -691,9 +691,11 @@ Defined.
 
 (****************)
 
-(* TODO this typechecks but looks like it's not applicable anywhere?
- * does reflectT need something more? is it built into 'apply/x'?
+(* XXX no longer using this
+ * instead of: move/lfilledP in HLF.
+ * use: apply lfilled_Ind_Equivalent in HLF.
  *)
+(*
 Lemma lfilledP: forall k lh es LI,
     reflectT (lfilledInd k lh es LI) (lfilled k lh es LI).
 Proof.
@@ -702,6 +704,7 @@ Proof.
   - apply ReflectF. move=> HContra. apply lfilled_Ind_Equivalent in HContra.
     by rewrite HLFBool in HContra.
 Qed.
+ *)
 
 Fixpoint lfill_exact (k : nat) (lh : lholed) (es : seq administrative_instruction) : option (seq administrative_instruction) :=
   match k with

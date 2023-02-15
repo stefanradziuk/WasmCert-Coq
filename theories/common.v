@@ -543,6 +543,25 @@ Proof.
     + by apply: IH.
 Qed.
 
+(* TODO maybe define FalseT := Empty_set somewhere? *)
+Fixpoint List_In_T (A : Type) (a : A) (l : list A) : Type :=
+  match l with
+  | [::] => Empty_set
+  | b :: l' => (a = b) + List_In_T a l'
+  end.
+
+(* Type version of the above *)
+Lemma Forall_forall_T : forall A (P : A -> Type) l,
+  Forall P l ->
+  forall e, List_In_T e l -> P e.
+Proof.
+  move=> A P l. elim {l}.
+  - by [].
+  - move=> e l Pe F IH e' /=. case.
+    + move=> E. by subst.
+    + by apply: IH.
+Qed.
+
 Lemma forall_Forall : forall A (P : A -> Prop) l,
   (forall e, List.In e l -> P e) ->
   Forall P l.
