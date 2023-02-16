@@ -1570,4 +1570,15 @@ Definition interpret_one_step s f es ts hs (H_config_typing : config_typing s f 
      | inr (existT _ (existT _ (existT es' _))) => es'
      end.
 
+Fixpoint interpret_multi_step (fuel : nat) s f es ts hs (HType : config_typing s f es ts) : seq administrative_instruction
+  := match fuel with
+     | O => es                       (* ran out of fuel *)
+     | S fuel' => match t_progress hs HType with
+                  | inl _ => es      (* es is already in terminal form *)
+                  | inr (existT _ (existT _ (existT _ (existT hs' HReduce)))) =>
+                      let HType' := t_preservation HReduce HType in
+                      interpret_multi_step fuel' hs' HType'
+                  end
+     end.
+
 End Host.

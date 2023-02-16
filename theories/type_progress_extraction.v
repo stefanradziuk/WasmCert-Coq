@@ -12,22 +12,21 @@ Let host_state := host_state host_instance.
 
 Definition t_progress := t_progress.
 Definition interpret_one_step := interpret_one_step.
+Definition interpret_multi_step := interpret_multi_step.
 
 Definition t_preservation := t_preservation.
 
 Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
 
-Definition add_2_7 : seq administrative_instruction := [::
-  AI_basic (BI_const (i32_of_Z (2)%Z));
-  AI_basic (BI_const (i32_of_Z (7)%Z));
-  AI_basic (BI_binop T_i32 (Binop_i BOI_add))
-  ].
-
-Definition add_2_7_bis : seq basic_instruction := [::
+Definition add_236_bis : seq basic_instruction := [::
   BI_const (i32_of_Z (2)%Z);
-  BI_const (i32_of_Z (7)%Z);
+  BI_const (i32_of_Z (3)%Z);
+  BI_const (i32_of_Z (6)%Z);
+  BI_binop T_i32 (Binop_i BOI_add);
   BI_binop T_i32 (Binop_i BOI_add)
   ].
+
+Definition add_236 : seq administrative_instruction := map AI_basic add_236_bis.
 
 Let store_record := store_record host_function.
 
@@ -57,50 +56,65 @@ Let emp_context : t_context := {|
   tc_global  := [::];
   tc_table   := [::];
   tc_memory  := [::];
-  tc_local   := [::]; (* ? *)
+  tc_local   := [::];
   tc_label   := [::];
   tc_return  := None;
-  (* tc_return  := Some [::T_i32]; *)
 |}.
 
-(* Let emp_context' : t_context := upd_local emp_context [::T_i32]. *)
-
-Theorem H_be_typing_add_2_7 : be_typing emp_context add_2_7_bis (Tf [::] [:: T_i32]).
+Theorem H_be_typing_add_236 : be_typing emp_context add_236_bis (Tf [::] [:: T_i32]).
 Proof.
   apply bet_composition with
-    (es := [:: BI_const (i32_of_Z (2)%Z); BI_const (i32_of_Z (7)%Z)])
+    (es := [::
+      BI_const (i32_of_Z (2)%Z);
+      BI_const (i32_of_Z (3)%Z);
+      BI_const (i32_of_Z (6)%Z);
+      BI_binop T_i32 (Binop_i BOI_add)
+    ])
     (t2s := [:: T_i32; T_i32]).
     - apply bet_composition with
-      (es := [:: BI_const (i32_of_Z (2)%Z)])
-      (t2s := [:: T_i32]).
-      + apply bet_const.
-      + apply bet_weakening with (ts := [:: T_i32]).
-        apply bet_const.
+      (es := [::
+        BI_const (i32_of_Z (2)%Z);
+        BI_const (i32_of_Z (3)%Z);
+        BI_const (i32_of_Z (6)%Z)
+      ])
+      (t2s := [:: T_i32; T_i32; T_i32]).
+      * apply bet_composition with
+        (es := [::
+          BI_const (i32_of_Z (2)%Z);
+          BI_const (i32_of_Z (3)%Z)
+        ])
+        (t2s := [:: T_i32; T_i32]).
+        + apply bet_composition with
+          (es := [:: BI_const (i32_of_Z (2)%Z)])
+          (t2s := [:: T_i32]).
+          -- apply bet_const.
+          -- apply bet_weakening with (ts := [:: T_i32]).
+             apply bet_const.
+        + apply bet_weakening with (ts := [:: T_i32; T_i32]).
+          apply bet_const.
+      * apply bet_weakening with (ts := [:: T_i32]).
+        apply bet_binop. apply Binop_i32_agree.
     - apply bet_binop. apply Binop_i32_agree.
 Defined.
 
-Theorem H_config_typing_add_2_7 : config_typing emp_store_record emp_frame add_2_7 [:: T_i32].
+Theorem H_config_typing_add_236 : config_typing emp_store_record emp_frame add_236 [:: T_i32].
 Proof.
   apply mk_config_typing.
   - repeat split; auto. apply TProp.Forall_nil.
   - apply mk_s_typing with (C := emp_context) (C0 := emp_context); auto.
     Print mk_frame_typing.
     apply mk_frame_typing with (i := emp_instance) (C := emp_context); auto.
-  - apply ety_a with (bes := add_2_7_bis).
-    apply H_be_typing_add_2_7.
+  - apply ety_a with (bes := add_236_bis).
+    apply H_be_typing_add_236.
 Defined.
 
-Definition ts_add_2_7 := [:: T_i32].
+Definition ts_add_236 := [:: T_i32].
+
+Definition fuel_100 : nat := 100.
 
 End ProgressExtract.
 
 Extraction Language Haskell.
-
-Recursive Extraction t_preservation.
-(* The following axioms must be realized in the extracted
- * code: store_global_extension_store_typed store_memory_extension_store_typed
- *       store_typed_cl_typed.
- *  [extraction-axiom-to-realize,extraction] *)
 
 Extraction "progress_extracted" ProgressExtract DummyHost.
 
