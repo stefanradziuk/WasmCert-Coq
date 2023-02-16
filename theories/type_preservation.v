@@ -3393,11 +3393,11 @@ Theorem t_preservation: forall s f es s' f' es' ts hs hs',
     config_typing s' f' es' ts.
 Proof.
   move => s f es s' f' es' ts hs hs' HReduce HType.
-  inversion HType as [???? H H0 H1]. inversion H0 as [??????? H5]. inversion H5. subst.
-  assert ((store_extension s s') ** (store_typing s')).
+  inversion HType as [???? H H0 H1]. inversion H0 as [??????? H5 ? H7]. inversion H5. subst.
+  assert (Hstore : (store_extension s s') ** (store_typing s')).
   { apply upd_label_unchanged_typing in H7.
     by eapply store_extension_reduce; eauto. }
-  destruct H1.
+  destruct Hstore.
   assert (inst_typing s' (f_inst f) C1); first by eapply inst_typing_extension; eauto.
   apply mk_config_typing; eauto.
   eapply mk_s_typing; eauto.
