@@ -1848,7 +1848,7 @@ Proof.
   - apply IHForall. assumption.
 Qed.
 
-(* TODO unused? *)
+(* TODO unused?
 Lemma List_In_List_In_T: forall (A : Type) (l : seq A) (x : A),
     TProp.List_In_T x l -> List.In x l.
   intros A l x H. induction l; inversion H.
@@ -1858,6 +1858,7 @@ Lemma List_In_List_In_T: forall (A : Type) (l : seq A) (x : A),
     unfold List.In. unfold List.In in goal. right.
     apply goal.
 Qed.
+*)
 
 Lemma store_typed_cl_typed: forall s n f,
     List.nth_error (s_funcs s) n = Some f ->
@@ -1873,7 +1874,7 @@ Proof.
   - apply List_Forall_forall_T with (x := f) in H.
     unfold cl_type_check_single in H. destruct H as [tf Hcl].
     by inversion Hcl; subst.
-  - apply List.nth_error_In in HN. apply List_In_List_In_T in HN. apply HN.
+  - apply TProp.nth_error_In in HN. apply HN.
 Qed.
 
 Lemma inst_t_context_local_empty: forall s i C,
@@ -2623,7 +2624,7 @@ Proof.
     apply N.div_le_mono => //.
     by lias.
 Qed.
-  
+
 Lemma store_global_extension_store_typed: forall s s',
     store_typing s ->
     store_extension s s' ->
@@ -2638,14 +2639,25 @@ Proof.
   unfold store_typing.
   destruct s => //=.
   destruct s' => //=.
-  destruct HST as [H H0].
-  (* TODO List.Forall stuff has to be converted from Prop to Type *)
-  Fail rewrite -> List.Forall_forall in H.
-  Fail rewrite -> List.Forall_forall in H0.
-Admitted. (* TODO
+  (* TODO why was this not discarded before? *)
+  destruct HST as [H [H0 _]].
+
+  (* TODO this assertion is quite ugly but for some reason
+   * my version of Forall_forall doesn't apply as nicely
+   * old version: rewrite -> List.Forall_forall in H. *)
+
+  remember (cl_type_check_single {| s_funcs := s_funcs; s_tables := s_tables; datatypes.s_mems := s_mems0; datatypes.s_globals := s_globals0 |}) as P.
+  assert (H' : forall x, TProp.List_In_T x s_funcs -> P x).
+  {
+    intros x Hxin. apply TProp.Forall_forall_T with (P := P) (l := s_funcs).
+    apply H. apply Hxin.
+  }
+
+  rewrite -> List.Forall_forall in H0.
+
   split => //; remove_bools_options; simpl in HF; simpl in HT; subst.
-  - rewrite -> List.Forall_forall. move => x HIN.
-    apply H in HIN. unfold cl_type_check_single in HIN.
+  - apply TProp.forall_Forall_T. move => x HIN.
+    apply H' in HIN. unfold cl_type_check_single in HIN.
     destruct HIN.
     unfold cl_type_check_single.
     exists x0. by eapply store_extension_cl_typing; eauto.
@@ -2666,7 +2678,6 @@ Admitted. (* TODO
       destruct HIN as [n HN].
       apply H8. by eapply List.nth_error_In; eauto.
 Qed.
-*)
 
 Lemma store_memory_extension_store_typed: forall s s',
     store_typing s ->
@@ -2682,14 +2693,20 @@ Proof.
   unfold store_typing.
   destruct s => //=.
   destruct s' => //=.
-  destruct HST as [H H0].
-  (* TODO List.Forall stuff has to be converted from Prop to Type *)
-  Fail rewrite -> List.Forall_forall in H.
-  Fail rewrite -> List.Forall_forall in H0.
-Admitted. (* TODO
+  destruct HST as [H [H0 _]].
+
+  (* TODO similar as above (rewrite -> List.Forall_forall in H.) *)
+  remember (cl_type_check_single {| s_funcs := s_funcs; s_tables := s_tables; datatypes.s_mems := s_mems0; datatypes.s_globals := s_globals0 |}) as P.
+  assert (H' : forall x, TProp.List_In_T x s_funcs -> P x).
+  {
+    intros x Hxin. apply TProp.Forall_forall_T with (P := P) (l := s_funcs).
+    apply H. apply Hxin.
+  }
+
+  rewrite -> List.Forall_forall in H0.
   split => //; remove_bools_options; simpl in HF; simpl in HT; subst.
-  - rewrite -> List.Forall_forall. move => x HIN.
-    apply H in HIN. unfold cl_type_check_single in HIN.
+  - apply TProp.forall_Forall_T. move => x HIN.
+    apply H' in HIN. unfold cl_type_check_single in HIN.
     destruct HIN.
     unfold cl_type_check_single.
     exists x0. by eapply store_extension_cl_typing; eauto.
@@ -2701,9 +2718,7 @@ Admitted. (* TODO
     unfold tab_agree.
     by rewrite -> List.Forall_forall.
 Qed.
-*)
 
-(* TODO this probably needs sigma *)
 Lemma nth_error_map: forall {X Y:Type} l n (f: X -> Y) fv,
     List.nth_error (map f l) n = Some fv ->
     {v & (List.nth_error l n = Some v) ** (f v = fv)}.

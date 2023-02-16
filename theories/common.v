@@ -582,6 +582,17 @@ Proof.
     + apply: IH => e' I. apply: H. by right.
 Defined.
 
+Lemma forall_Forall_T : forall A (P : A -> Type) l,
+  (forall e, List_In_T e l -> P e) ->
+  Forall P l.
+Proof.
+  move=> A P. elim.
+  - move=> _. by apply: Forall_nil.
+  - move=> e l IH H. apply: Forall_cons.
+    + apply: H. by left.
+    + apply: IH => e' I. apply: H. by right.
+Defined.
+
 Lemma Forall_List_Forall : forall A (P : A -> Prop) l,
   Forall P l ->
   List.Forall P l.
