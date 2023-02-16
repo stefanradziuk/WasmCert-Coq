@@ -1,7 +1,7 @@
 (** Common useful definitions **)
 (* (C) M. Bodin - see LICENSE.txt *)
 
-From Coq Require Import Lia.
+From Coq Require Import Lia Program.Equality.
 From mathcomp Require Import ssreflect ssrnat ssrbool seq eqtype.
 From compcert Require Integers.
 From Wasm Require Export pickability extraction_utils.
@@ -544,11 +544,20 @@ Proof.
 Qed.
 
 (* TODO maybe define FalseT := Empty_set somewhere? *)
+(* Type version of List.In *)
 Fixpoint List_In_T (A : Type) (a : A) (l : list A) : Type :=
   match l with
   | [::] => Empty_set
   | b :: l' => (a = b) + List_In_T a l'
   end.
+
+Lemma nth_error_In : forall (A : Type) (l : list A) (n : nat) (x : A),
+  List.nth_error l n = Some x -> List_In_T x l.
+Proof.
+  intros A l n x H. dependent induction l; destruct n; inversion H.
+  - left. subst. reflexivity.
+  - right. apply (IHl n). assumption.
+Qed.
 
 (* Type version of the above *)
 Lemma Forall_forall_T : forall A (P : A -> Type) l,

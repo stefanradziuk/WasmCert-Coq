@@ -1839,8 +1839,27 @@ Proof.
     by repeat rewrite -catA.
 Qed.
 
+Lemma List_Forall_forall_T: forall (A : Type) (P : A -> Type) (l : seq A),
+       TProp.Forall P l -> (forall x : A, TProp.List_In_T x l -> P x).
+Proof.
+  intros A P l H x Hxinl.
+  induction H; destruct Hxinl.
+  - subst. try assumption.
+  - apply IHForall. assumption.
+Qed.
+
+(* TODO unused? *)
+Lemma List_In_List_In_T: forall (A : Type) (l : seq A) (x : A),
+    TProp.List_In_T x l -> List.In x l.
+  intros A l x H. induction l; inversion H.
+  - unfold List.In. auto.
+  - (* TODO: `X` naming - comes from inversion? *)
+    assert (goal : List.In x l). { apply (IHl X). }
+    unfold List.In. unfold List.In in goal. right.
+    apply goal.
+Qed.
+
 Lemma store_typed_cl_typed: forall s n f,
-    (* XXX the *)
     List.nth_error (s_funcs s) n = Some f ->
     store_typing s ->
     cl_typing s f (cl_type f).
@@ -1851,17 +1870,11 @@ Proof.
   remove_bools_options.
   simpl in HN.
   destruct HST as [H ?].
-  apply TProp.Forall_forall_T with (e := f) in H.
-  (* TODO fix this and restore structure similar to before
-   * List.nth_error_In gives us List.In, we want TProp.List_In_T instead
-   *)
-  apply List.nth_error_In in HN.
-  remember HN as HN'.
-  unfold cl_type_check_single in H. destruct H.
-  by inversion c; subst.
-  assert (goal : TProp.List_In_T f s_funcs). { give_up. }
-  apply goal.
-Admitted.
+  - apply List_Forall_forall_T with (x := f) in H.
+    unfold cl_type_check_single in H. destruct H as [tf Hcl].
+    by inversion Hcl; subst.
+  - apply List.nth_error_In in HN. apply List_In_List_In_T in HN. apply HN.
+Qed.
 
 Lemma inst_t_context_local_empty: forall s i C,
     inst_typing s i C ->
