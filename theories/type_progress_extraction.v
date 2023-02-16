@@ -1,6 +1,6 @@
 From mathcomp Require Import eqtype seq.
 From Coq Require Import Program.Equality ZArith_base Extraction.
-From Wasm Require Export type_progress.
+From Wasm Require Export type_progress type_preservation.
 
 
 Module ProgressExtract.
@@ -12,6 +12,8 @@ Let host_state := host_state host_instance.
 
 Definition t_progress := t_progress.
 Definition interpret_one_step := interpret_one_step.
+
+Definition t_preservation := t_preservation.
 
 Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
 
@@ -93,6 +95,13 @@ Definition ts_add_2_7 := [:: T_i32].
 End ProgressExtract.
 
 Extraction Language Haskell.
+
+Recursive Extraction t_preservation.
+(* The following axioms must be realized in the extracted
+ * code: store_global_extension_store_typed store_memory_extension_store_typed
+ *       store_typed_cl_typed.
+ *  [extraction-axiom-to-realize,extraction] *)
+
 Extraction "progress_extracted" ProgressExtract DummyHost.
 
 (*
