@@ -11,11 +11,23 @@ Unset Printing Implicit Defensive.
 
 Require Import operations opsem interpreter_func properties.
 
+(* XXX copied this from the iris branch to get some examples working *)
+Lemma take_drop {A} n (l : list A) : n <= length l -> l = seq.take n l ++ seq.drop n l.
+Proof.
+  intros. generalize dependent n. induction l ; intros.  by inversion H.
+  destruct n. by unfold take, drop.
+  simpl. rewrite <- (IHl n) => //=. 
+Qed.
+
+
+(* XXX the end of the file is commented out
+ * (not needed right now and it has set/prop inconsistencies
 
 Section Host.
   
 Hint Constructors reduce_simple : core.
 Hint Constructors reduce : core.
+
 
 Variable host_function : eqType.
 Let store_record := store_record host_function.
@@ -1246,4 +1258,4 @@ Proof.
   move=> d hs s f es hs' s' f' es'. by apply: run_step_soundness_aux.
 Qed.
 
-End Host.
+End Host. *)

@@ -7,7 +7,8 @@ From ITree Require Import ITree.
 From ITree Require ITreeFacts.
 From Wasm Require Import list_extra datatypes datatypes_properties
                          interpreter binary_format_parser operations
-                         typing opsem type_checker memory memory_list.
+                         typing opsem type_checker memory memory_list
+                         extraction_utils common.
 From Coq Require Import BinNat.
 
 (* TODO: Documentation *)
@@ -348,24 +349,24 @@ Definition const_expr (c : t_context) (b_e : basic_instruction) : bool :=
 Definition const_exprs (c : t_context) (es : list basic_instruction) : bool :=
   seq.all (const_expr c) es.
 
-Definition module_glob_typing (c : t_context) (g : module_glob) (tg : global_type) : Prop :=
+Definition module_glob_typing (c : t_context) (g : module_glob) (tg : global_type) : Type :=
   let '{| modglob_type := tg'; modglob_init := es |} := g in
-  const_exprs c es /\
-  tg = tg' /\
-  typing.be_typing c es (Tf nil [::tg.(tg_t)]).
+  (const_exprs c es) **
+  (tg = tg') **
+  (typing.be_typing c es (Tf nil [::tg.(tg_t)])).
 
-Definition module_elem_typing (c : t_context) (e : module_element) : Prop :=
+Definition module_elem_typing (c : t_context) (e : module_element) : Type :=
   let '{| modelem_table := Mk_tableidx t; modelem_offset := es; modelem_init := is_ |} := e in
-  const_exprs c es /\
-  typing.be_typing c es (Tf nil [::T_i32]) /\
-  t < List.length c.(tc_table) /\
-  seq.all (fun '(Mk_funcidx i) => i < List.length c.(tc_func_t)) is_.
+  (const_exprs c es) **
+  (typing.be_typing c es (Tf nil [::T_i32])) **
+  (t < List.length c.(tc_table)) **
+  (seq.all (fun '(Mk_funcidx i) => i < List.length c.(tc_func_t)) is_).
 
-Definition module_data_typing (c : t_context) (m_d : module_data) : Prop :=
+Definition module_data_typing (c : t_context) (m_d : module_data) : Type :=
   let '{| moddata_data := Mk_memidx d; moddata_offset := es; moddata_init := bs |} := m_d in
-  const_exprs c es /\
-  typing.be_typing c es (Tf nil [::T_i32]) /\
-  d < List.length c.(tc_memory).
+  (const_exprs c es) **
+  (typing.be_typing c es (Tf nil [::T_i32])) **
+  (d < List.length c.(tc_memory)).
 
 Definition module_start_typing (c : t_context) (ms : module_start) : bool :=
   let '(Mk_funcidx i) := ms.(modstart_func) in
@@ -427,8 +428,17 @@ Definition pred_option {A} (p : A -> bool) (a_opt : option A) : bool :=
   | Some a => p a
   end.
 
-Definition module_typing (m : module) (impts : list extern_t) (expts : list extern_t) : Prop :=
-  exists fts gts,
+(* TODO used to re place List.Forall2 for Type-compatibility.
+ * Unfortunately this breaks the module_typing proofs (rewrite Forall2_cons doesn't work) *)
+Inductive List_Forall2_T {A B : Type} (R : A -> B -> Type) : seq A -> seq B -> Type :=
+  | Forall2_nil : List_Forall2_T R [::] [::]
+  | Forall2_cons : forall (x : A) (y : B) (l : seq A) (l' : seq B),
+      R x y ->
+      List_Forall2_T R l l' -> List_Forall2_T R (x :: l) (y :: l')
+.
+
+Definition module_typing (m : module) (impts : list extern_t) (expts : list extern_t) : Type :=
+  {fts & {gts &
   let '{| 
     mod_types := tfs;
     mod_funcs := fs;
@@ -465,15 +475,15 @@ Definition module_typing (m : module) (impts : list extern_t) (expts : list exte
     tc_label := nil;
     tc_return := None;
   |} in
-  List.Forall2 (module_func_typing c) fs fts /\
-  seq.all module_tab_typing ts /\
-  seq.all module_mem_typing ms /\
-  List.Forall2 (module_glob_typing c') gs gts /\
-  List.Forall (module_elem_typing c) els /\
-  List.Forall (module_data_typing c) ds /\
-  pred_option (module_start_typing c) i_opt /\
-  List.Forall2 (fun imp => module_import_typing c imp.(imp_desc)) imps impts /\
-  List.Forall2 (fun exp => module_export_typing c exp.(modexp_desc)) exps expts.
+  (List_Forall2_T (module_func_typing c) fs fts ) **
+  (seq.all module_tab_typing ts ) **
+  (seq.all module_mem_typing ms ) **
+  (List_Forall2_T (module_glob_typing c') gs gts ) **
+  (TProp.Forall (module_elem_typing c) els ) **
+  (TProp.Forall (module_data_typing c) ds ) **
+  (pred_option (module_start_typing c) i_opt ) **
+  (List_Forall2_T (fun imp => module_import_typing c imp.(imp_desc)) imps impts ) **
+  (List_Forall2_T (fun exp => module_export_typing c exp.(modexp_desc)) exps expts)}}.
 
 Inductive external_typing : store_record -> v_ext -> extern_t -> Prop :=
 | ETY_func :
@@ -501,6 +511,7 @@ Inductive external_typing : store_record -> v_ext -> extern_t -> Prop :=
   typing.global_agree g gt ->
   external_typing s (MED_global (Mk_globalidx i)) (ET_glob gt).
 
+(* XXX The rest of this file is not needed atm
 Definition instantiate_globals inst (hs' : host_state) (s' : store_record) m g_inits : Prop :=
   List.Forall2 (fun g v =>
       opsem.reduce_trans (hs', s', (Build_frame nil inst), operations.to_e_list g.(modglob_init))
@@ -877,8 +888,11 @@ Definition lookup_exported_function (n : name) (store_inst_exps : store_record *
     exps
     None.
 
+ *)
+
 End Host.
 
+(* XXX not needed atm
 (** As-is, [eqType] tends not to extract well.
   This section provides alternative definitions for better extraction. **)
 Module Instantiation (EH : Executable_Host).
@@ -898,4 +912,5 @@ Definition interp_instantiate_wrapper :
   @interp_instantiate_wrapper _ executable_host_instance _ (fun T e => e).
 
 End Instantiation.
+ *)
 
