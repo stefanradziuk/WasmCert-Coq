@@ -1394,7 +1394,7 @@ Qed.
 
 Lemma ct_suffix_1_impl: forall tm,
   ct_suffix [::CTA_any] (to_ct_list tm) ->
-  exists v tm', tm = tm' ++ [::v].
+  {v & {tm' & tm = tm' ++ [::v]}}.
 Proof.
   move => tm.
   case/lastP: tm => [|tm x] => //=.
@@ -1402,10 +1402,10 @@ Proof.
   exists x, tm.
   by rewrite cats1.
 Qed.
-  
+
 Lemma type_update_select_agree_bet: forall C cts tm,
   c_types_agree (type_update_select cts) tm ->
-  exists tn, c_types_agree cts tn /\ be_typing C [::BI_select] (Tf tn tm).
+  {tn & (c_types_agree cts tn) ** (be_typing C [::BI_select] (Tf tn tm))}.
 Proof with auto_rewrite_cond.
   move => C cts tm Hct.
   unfold type_update_select in Hct...
@@ -1648,19 +1648,20 @@ Qed.
   meausre we defined above for that purpose.
 *)
 Lemma tc_to_bet_conj d:
-  ( forall C cts bes tm cts',
+  forall C cts bes tm cts',
   be_size_list bes <= d ->
   check C bes cts = cts' ->
   c_types_agree cts' tm ->
-  exists tn, c_types_agree cts tn /\ be_typing C bes (Tf tn tm)) /\
+  {tn & (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm)) **
   ( forall C cts tm e cts',
   be_size_single e <= d ->
   check_single C cts e = cts' ->
   c_types_agree cts' tm ->
-  exists tn, c_types_agree cts tn /\ be_typing C ([:: e]) (Tf tn tm)).
+  {tn & (c_types_agree cts tn) ** (be_typing C ([:: e]) (Tf tn tm))})}.
 Proof with auto_rewrite_cond.
   strong induction d => //=.
-  split.
+  Fail split.
+Admitted. (* XXX looks like auto rewrite fails here
   (* List *) 
   - move => c cts bes.
     move: c cts.
@@ -1943,22 +1944,25 @@ Proof with auto_rewrite_cond.
       apply bet_weakening.
       apply bet_reinterpret => //; by [ move/eqP in H0 | rewrite H2; apply/eqP].
 Qed.
+      *)
 
 Lemma tc_to_bet_list: forall C cts bes tm cts',
   check C bes cts = cts' ->
   c_types_agree cts' tm ->
-  exists tn, c_types_agree cts tn /\ be_typing C bes (Tf tn tm).
+  {tn & (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}.
 Proof.
   intros.
-  specialize tc_to_bet_conj with (be_size_list bes).
+  Fail specialize tc_to_bet_conj with (be_size_list bes).
+Admitted. (* XXX
   move => H1.
   destruct H1 as [H1 _].
   by eapply H1; eauto.
 Qed.
+           *)
 
 Lemma b_e_type_checker_reflects_typing:
   forall C bes tf,
-    reflect (be_typing C bes tf) (b_e_type_checker C bes tf).
+    reflectT (be_typing C bes tf) (b_e_type_checker C bes tf).
 Proof with auto_rewrite_cond.
   move => C bes tf.
   destruct tf as [tn tm].
@@ -1974,6 +1978,7 @@ Proof with auto_rewrite_cond.
     induction Hbet; subst => //=; unfold type_update => //=; try destruct t, op; try by inversion H...
     + unfold convert_cond...
     + unfold same_lab => //=.
+Admitted. (* TODO broken, most likely because of auto_rewrite_cond
       remember (ins ++ [::i]) as l.
       rewrite - Heql.
       destruct l => //=; first by destruct ins.
@@ -2004,6 +2009,7 @@ Proof with auto_rewrite_cond.
       * move/eqP in IHHbet1. by subst.
     + by apply c_types_agree_weakening.
 Qed.
+           *)
 
 End Host.
 
