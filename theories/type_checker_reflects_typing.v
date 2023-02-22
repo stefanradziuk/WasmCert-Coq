@@ -422,6 +422,7 @@ Ltac auto_rewrite_cond:=
          | _ => simplify_goal => //=; (try rewrite ct_suffix_suffix => //=); (try rewrite ct_suffix_self => //=); (try subst => //=)
          end.
 
+(* XXX should this be using prod instead of andP? *)
 Lemma populate_ct_aux_suffix: forall l,
   ct_suffix l (to_ct_list (populate_ct_aux l)).
 Proof with auto_rewrite_cond.
@@ -481,7 +482,7 @@ Lemma check_rcons: forall es e C ts,
 Proof.
   by induction es => //=.
 Qed.
-    
+
 Lemma check_single_notop: forall C ct ts e,
   check_single C ct e = CT_type ts ->
   exists ts', ct = CT_type ts'.
@@ -610,7 +611,7 @@ Proof.
   unfold plop2.
   by rewrite Hnth.
 Qed.
-  
+
 Lemma same_lab_h_rec: forall x l C ts,
   same_lab_h (x :: l) (tc_label C) ts = Some ts ->
   same_lab_h l (tc_label C) ts = Some ts.
@@ -1648,21 +1649,20 @@ Qed.
   meausre we defined above for that purpose.
 *)
 Lemma tc_to_bet_conj d:
-  forall C cts bes tm cts',
+  (forall C cts bes tm cts',
   be_size_list bes <= d ->
   check C bes cts = cts' ->
   c_types_agree cts' tm ->
-  {tn & (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm)) **
+  {tn & (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}) **
   ( forall C cts tm e cts',
   be_size_single e <= d ->
   check_single C cts e = cts' ->
   c_types_agree cts' tm ->
-  {tn & (c_types_agree cts tn) ** (be_typing C ([:: e]) (Tf tn tm))})}.
+  {tn & (c_types_agree cts tn) ** (be_typing C ([:: e]) (Tf tn tm))}).
 Proof with auto_rewrite_cond.
   strong induction d => //=.
-  Fail split.
-Admitted. (* XXX looks like auto rewrite fails here
-  (* List *) 
+  split.
+  (* List *)
   - move => c cts bes.
     move: c cts.
     induction bes as [| bes e] using last_ind => //=; move => C cts tm cts' Hs Hct1 Hbetc.
@@ -1680,7 +1680,8 @@ Admitted. (* XXX looks like auto rewrite fails here
       symmetry in Heqbesct.
       assert (be_size_single e < d)%coq_nat as Hmeasure; first by lias.
       assert (be_size_list bes < d)%coq_nat as Hmeasure2; first by lias.
-      specialize H with (be_size_single e) as Hs1.
+      Fail specialize H with (be_size_single e) as Hs1.
+Admitted. (* XXX
       apply Hs1 in Hmeasure.
       destruct Hmeasure as [_ Hmeasure].
       eapply Hmeasure in Heqect => //; last by apply Hbetc.
@@ -1952,13 +1953,11 @@ Lemma tc_to_bet_list: forall C cts bes tm cts',
   {tn & (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}.
 Proof.
   intros.
-  Fail specialize tc_to_bet_conj with (be_size_list bes).
-Admitted. (* XXX
+  specialize tc_to_bet_conj with (be_size_list bes).
   move => H1.
   destruct H1 as [H1 _].
   by eapply H1; eauto.
 Qed.
-           *)
 
 Lemma b_e_type_checker_reflects_typing:
   forall C bes tf,
