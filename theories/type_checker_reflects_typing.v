@@ -1976,13 +1976,18 @@ Proof with auto_rewrite_cond.
   - apply ReflectF.
     move => Hbet.
     assert (b_e_type_checker C bes (Tf tn tm)) as H; (try by rewrite H in Htc_bool); clear Htc_bool.
-    induction Hbet; subst => //=; unfold type_update => //=; try destruct t, op; try by inversion H...
+    induction Hbet; subst => //=; unfold type_update => //=; try destruct t, op;
+    (* XXX nasty quick fix: old H is named u/b/r now in different branches
+     * could do explicit naming on induction but it's 32 cases
+     *)
+      try rename b into H; try rename u into H; try rename r into H;
+      try by inversion H...
     + unfold convert_cond...
     + unfold same_lab => //=.
-Admitted. (* TODO broken, most likely because of auto_rewrite_cond(?)
       remember (ins ++ [::i]) as l.
       rewrite - Heql.
       destruct l => //=; first by destruct ins.
+      rename i0 into H. (* TODO explicit naming? *)
       remember H as H2; clear HeqH2.
       move/allP in H2.
       assert (n \in (ins ++ [::i])) as Hn; first by rewrite - Heql; rewrite mem_head.
@@ -2010,7 +2015,6 @@ Admitted. (* TODO broken, most likely because of auto_rewrite_cond(?)
       * move/eqP in IHHbet1. by subst.
     + by apply c_types_agree_weakening.
 Qed.
-           *)
 
 End Host.
 
