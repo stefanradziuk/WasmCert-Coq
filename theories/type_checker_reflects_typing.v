@@ -2016,5 +2016,15 @@ Proof with auto_rewrite_cond.
     + by apply c_types_agree_weakening.
 Qed.
 
+(* TODO prove iff *)
+Lemma typing_if_type_checker: forall C bes tf,
+  (b_e_type_checker C bes tf = true) -> (be_typing C bes tf).
+Proof.
+  intros C bes tf H.
+  apply reflectT_iff_true.
+  rewrite <- H.
+  apply b_e_type_checker_reflects_typing.
+Qed.
+
 End Host.
 

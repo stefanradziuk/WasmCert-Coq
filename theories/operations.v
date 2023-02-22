@@ -653,6 +653,13 @@ Inductive reflectT (T : Type) : bool -> Type :=
 Hint Constructors reflect : core.
  *)
 
+Lemma reflectT_iff_true : forall P, reflectT P true <--> P.
+Proof.
+  intro P. split.
+  - intro Hr. inversion Hr. assumption.
+  - apply ReflectT.
+Qed.
+
 Lemma reflectT_iff : forall P b, reflectT P b -> (P<-->b=true).
 Proof.
   destruct 1 => //.
