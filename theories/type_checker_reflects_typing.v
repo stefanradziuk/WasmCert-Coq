@@ -1287,7 +1287,7 @@ Qed.
 
 Lemma type_update_type_agree: forall tm tn' tm' cts,
   c_types_agree (type_update cts (to_ct_list tn') (CT_type tm')) tm ->
-  exists lp, c_types_agree cts (lp ++ tn') /\ tm = lp ++ tm'.
+  {lp & (c_types_agree cts (lp ++ tn')) ** (tm = lp ++ tm')}.
 Proof with auto_rewrite_cond.
   move => tm tn' tm' cts H.
   exists (take (size tm - size tm') tm).
@@ -1565,10 +1565,10 @@ Proof with auto_rewrite_cond.
     simpl in H1...
     apply bet_select.
 Qed.
-    
+
 Lemma tc_to_bet_br: forall cts l,
   consume cts (to_ct_list l) <> CT_bot ->
-  exists tn, c_types_agree cts (tn ++ l).
+  {tn & c_types_agree cts (tn ++ l)}.
 Proof with auto_rewrite_cond.
   move => cts l Hconsume.
   destruct cts as [ctst | cts | ]=> //.
@@ -1663,7 +1663,9 @@ Proof with auto_rewrite_cond.
   strong induction d => //=.
   split.
   (* List *)
-  - move => c cts bes.
+  - (* TODO strong induction explicit naming? *)
+    rename X into H.
+    move => c cts bes.
     move: c cts.
     induction bes as [| bes e] using last_ind => //=; move => C cts tm cts' Hs Hct1 Hbetc.
     + exists tm.
@@ -1680,8 +1682,7 @@ Proof with auto_rewrite_cond.
       symmetry in Heqbesct.
       assert (be_size_single e < d)%coq_nat as Hmeasure; first by lias.
       assert (be_size_list bes < d)%coq_nat as Hmeasure2; first by lias.
-      Fail specialize H with (be_size_single e) as Hs1.
-Admitted. (* XXX
+      specialize H with (be_size_single e) as Hs1.
       apply Hs1 in Hmeasure.
       destruct Hmeasure as [_ Hmeasure].
       eapply Hmeasure in Heqect => //; last by apply Hbetc.
@@ -1692,7 +1693,9 @@ Admitted. (* XXX
       eapply bet_composition; last by apply Hbet.
       by apply Hbets.
   (* Single *)
-  - destruct e => //=; (try destruct f as [tn' tm']); auto_rewrite_cond; move => ? Hs Hct Hct2; simplify_type_update => //...
+  - (* TODO strong induction explicit naming? *)
+    rename X into H.
+    destruct e => //=; (try destruct f as [tn' tm']); auto_rewrite_cond; move => ? Hs Hct Hct2; simplify_type_update => //...
     + exists (populate_ct cts); split; by [apply populate_ct_agree | apply bet_unreachable].
     + exists tm; split => //.
       apply bet_weakening_empty_both.
@@ -1945,7 +1948,6 @@ Admitted. (* XXX
       apply bet_weakening.
       apply bet_reinterpret => //; by [ move/eqP in H0 | rewrite H2; apply/eqP].
 Qed.
-      *)
 
 Lemma tc_to_bet_list: forall C cts bes tm cts',
   check C bes cts = cts' ->
@@ -1977,7 +1979,7 @@ Proof with auto_rewrite_cond.
     induction Hbet; subst => //=; unfold type_update => //=; try destruct t, op; try by inversion H...
     + unfold convert_cond...
     + unfold same_lab => //=.
-Admitted. (* TODO broken, most likely because of auto_rewrite_cond
+Admitted. (* TODO broken, most likely because of auto_rewrite_cond(?)
       remember (ins ++ [::i]) as l.
       rewrite - Heql.
       destruct l => //=; first by destruct ins.
