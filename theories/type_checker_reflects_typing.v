@@ -2004,7 +2004,7 @@ Proof with auto_rewrite_cond.
       rewrite H.
       rewrite ct_suffix_suffix...
     + destruct tf as [t1 t2] => //=...
-    + destruct (List.nth_error (tc_global C) i) => //=...
+      destruct (List.nth_error (tc_global C) i) => //=...
     + unfold type_update => //=...
     + unfold type_update => //=...
     + by destruct (tc_table C) eqn:Hctable => //=.
@@ -2021,7 +2021,7 @@ Qed.
 Lemma b_e_type_checker_iffT_typing:
   forall C bes tf,
     iffT (be_typing C bes tf) (b_e_type_checker C bes tf = true).
-Proof with auto_rewrite_cond.
+Proof.
   move => C bes tf.
   destruct tf as [tn tm].
   destruct (b_e_type_checker C bes (Tf tn tm)) eqn: Htc_bool.
@@ -2040,8 +2040,8 @@ Proof with auto_rewrite_cond.
      * could do explicit naming on induction but it's 32 cases
      *)
       try rename b into H; try rename u into H; try rename r into H;
-      try by inversion H...
-    * unfold convert_cond...
+      try (auto_rewrite_cond; inversion H; auto_rewrite_cond).
+    * unfold convert_cond. auto_rewrite_cond.
     * unfold same_lab => //=.
       remember (ins ++ [::i]) as l.
       rewrite - Heql.
@@ -2061,14 +2061,15 @@ Proof with auto_rewrite_cond.
       rewrite - Heql in H.
       apply same_lab_h_rec in H.
       rewrite H.
-      rewrite ct_suffix_suffix...
-    * destruct tf as [t1 t2] => //=...
-    * destruct (List.nth_error (tc_global C) i) => //=...
-    * unfold type_update => //=...
-    * unfold type_update => //=...
-    * by destruct (tc_table C) eqn:Hctable => //=.
+      rewrite ct_suffix_suffix; auto_rewrite_cond.
+    * destruct tf as [t1 t2] => //=; auto_rewrite_cond.
+    * destruct (List.nth_error (tc_global C) i) => //=; auto_rewrite_cond.
+    * unfold type_update => //=; auto_rewrite_cond.
+    * unfold type_update => //=; auto_rewrite_cond.
+    * auto_rewrite_cond. by destruct (tc_table C) eqn:Hctable => //=.
     * rewrite List.fold_left_app => //=.
       unfold c_types_agree in IHHbet1.
+      auto_rewrite_cond.
       destruct (List.fold_left _ es _) eqn:Htc => //=.
       -- by eapply c_types_agree_suffix_single; eauto.
       -- move/eqP in IHHbet1. by subst.
@@ -2091,5 +2092,10 @@ End Host.
 
 From Coq Require Import Extraction.
 Extraction Language Haskell.
+
+Recursive Extraction be_typing.
+Recursive Extraction b_e_type_checker.
+Recursive Extraction iffT.
+
 (* XXX this hangs *)
 Recursive Extraction b_e_type_checker_iffT_typing.
