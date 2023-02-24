@@ -2016,6 +2016,66 @@ Proof with auto_rewrite_cond.
     + by apply c_types_agree_weakening.
 Qed.
 
+(* Trying the above with iffT instead of reflectT
+ * (debugging hanging extraction) *)
+Lemma b_e_type_checker_iffT_typing:
+  forall C bes tf,
+    iffT (be_typing C bes tf) (b_e_type_checker C bes tf = true).
+Proof with auto_rewrite_cond.
+  move => C bes tf.
+  destruct tf as [tn tm].
+  destruct (b_e_type_checker C bes (Tf tn tm)) eqn: Htc_bool.
+  - split; try reflexivity.
+    intros _.
+    unfold b_e_type_checker in Htc_bool.
+    fold (check C bes (CT_type tn)) in Htc_bool.
+    eapply tc_to_bet_list in Htc_bool; eauto.
+    by destruct Htc_bool as [x [Hagree Hbet]]; auto_rewrite_cond.
+  - split.
+    + move => Hbet.
+      exfalso.
+    assert (b_e_type_checker C bes (Tf tn tm)) as H; (try by rewrite H in Htc_bool); clear Htc_bool.
+    induction Hbet; subst => //=; unfold type_update => //=; try destruct t, op;
+    (* XXX nasty quick fix: old H is named u/b/r now in different branches
+     * could do explicit naming on induction but it's 32 cases
+     *)
+      try rename b into H; try rename u into H; try rename r into H;
+      try by inversion H...
+    * unfold convert_cond...
+    * unfold same_lab => //=.
+      remember (ins ++ [::i]) as l.
+      rewrite - Heql.
+      destruct l => //=; first by destruct ins.
+      rename i0 into H. (* TODO explicit naming? *)
+      remember H as H2; clear HeqH2.
+      move/allP in H2.
+      assert (n \in (ins ++ [::i])) as Hn; first by rewrite - Heql; rewrite mem_head.
+      apply H2 in Hn.
+      move/andP in Hn; destruct Hn as [H3 H4].
+      unfold plop2 in H4.
+      replace (length (tc_label C) <= n) with false; last by lias.
+      move/eqP in H4.
+      rewrite H4.
+      apply same_lab_h_condition in H.
+      replace (ins ++ [::i])%list with (ins ++ [::i]) in H; last by lias.
+      rewrite - Heql in H.
+      apply same_lab_h_rec in H.
+      rewrite H.
+      rewrite ct_suffix_suffix...
+    * destruct tf as [t1 t2] => //=...
+    * destruct (List.nth_error (tc_global C) i) => //=...
+    * unfold type_update => //=...
+    * unfold type_update => //=...
+    * by destruct (tc_table C) eqn:Hctable => //=.
+    * rewrite List.fold_left_app => //=.
+      unfold c_types_agree in IHHbet1.
+      destruct (List.fold_left _ es _) eqn:Htc => //=.
+      -- by eapply c_types_agree_suffix_single; eauto.
+      -- move/eqP in IHHbet1. by subst.
+    * by apply c_types_agree_weakening.
+    + intros Hft. inversion Hft.
+Qed.
+
 (* TODO prove iff *)
 Lemma typing_if_type_checker: forall C bes tf,
   (b_e_type_checker C bes tf = true) -> (be_typing C bes tf).
@@ -2028,3 +2088,8 @@ Qed.
 
 End Host.
 
+
+From Coq Require Import Extraction.
+Extraction Language Haskell.
+(* XXX this hangs *)
+Recursive Extraction b_e_type_checker_iffT_typing.

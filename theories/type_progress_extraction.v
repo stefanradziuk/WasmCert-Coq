@@ -19,11 +19,11 @@ Definition t_preservation := t_preservation.
 Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
 
 Definition add_236_bis : seq basic_instruction := [::
-  BI_const (i32_of_Z (2)%Z);
-  BI_const (i32_of_Z (3)%Z);
-  BI_const (i32_of_Z (6)%Z);
-  BI_binop T_i32 (Binop_i BOI_add);
-  BI_binop T_i32 (Binop_i BOI_add)
+  BI_const (i32_of_Z (2)%Z)
+  (* BI_const (i32_of_Z (3)%Z); *)
+  (* BI_const (i32_of_Z (6)%Z); *)
+  (* BI_binop T_i32 (Binop_i BOI_add); *)
+  (* BI_binop T_i32 (Binop_i BOI_add) *)
   ].
 
 Definition add_236 : seq administrative_instruction := map AI_basic add_236_bis.
@@ -62,7 +62,51 @@ Let emp_context : t_context := {|
 |}.
 
 Theorem H_be_typing_add_236 : be_typing emp_context add_236_bis (Tf [::] [:: T_i32]).
-Proof. apply typing_if_type_checker => /=. reflexivity. Qed.
+Proof. apply typing_if_type_checker => /=. reflexivity. Defined.
+
+Print H_be_typing_add_236.
+
+Extraction Language Haskell.
+Extraction typing_if_type_checker.
+Extraction H_be_typing_add_236.
+
+
+(*
+Proof.
+  apply bet_composition with
+    (es := [::
+      BI_const (i32_of_Z (2)%Z);
+      BI_const (i32_of_Z (3)%Z);
+      BI_const (i32_of_Z (6)%Z);
+      BI_binop T_i32 (Binop_i BOI_add)
+    ])
+    (t2s := [:: T_i32; T_i32]).
+    - apply bet_composition with
+      (es := [::
+        BI_const (i32_of_Z (2)%Z);
+        BI_const (i32_of_Z (3)%Z);
+        BI_const (i32_of_Z (6)%Z)
+      ])
+      (t2s := [:: T_i32; T_i32; T_i32]).
+      * apply bet_composition with
+        (es := [::
+          BI_const (i32_of_Z (2)%Z);
+          BI_const (i32_of_Z (3)%Z)
+        ])
+        (t2s := [:: T_i32; T_i32]).
+        + apply bet_composition with
+          (es := [:: BI_const (i32_of_Z (2)%Z)])
+          (t2s := [:: T_i32]).
+          -- apply bet_const.
+          -- apply bet_weakening with (ts := [:: T_i32]).
+             apply bet_const.
+        + apply bet_weakening with (ts := [:: T_i32; T_i32]).
+          apply bet_const.
+      * apply bet_weakening with (ts := [:: T_i32]).
+        apply bet_binop. apply Binop_i32_agree.
+    - apply bet_binop. apply Binop_i32_agree.
+Qed.
+ *)
 
 Theorem H_config_typing_add_236 : config_typing emp_store_record emp_frame add_236 [:: T_i32].
 Proof.
@@ -81,9 +125,11 @@ Definition fuel_100 : nat := 100.
 
 End ProgressExtract.
 
+(*
 Extraction Language Haskell.
 
 Extraction "progress_extracted" ProgressExtract DummyHost.
+ *)
 
 (*
  * Depending on the GHC version, the extracted code may have to be patched.
