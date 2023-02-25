@@ -1648,6 +1648,7 @@ Qed.
   Coq is reluctant to accept that the mutual recursive proof actually terminates, so we use the
   meausre we defined above for that purpose.
 *)
+(* XXX breaks extraction *)
 Lemma tc_to_bet_conj d:
   (forall C cts bes tm cts',
   be_size_list bes <= d ->
@@ -1659,6 +1660,8 @@ Lemma tc_to_bet_conj d:
   check_single C cts e = cts' ->
   c_types_agree cts' tm ->
   {tn & (c_types_agree cts tn) ** (be_typing C ([:: e]) (Tf tn tm))}).
+Admitted.
+(*
 Proof with auto_rewrite_cond.
   strong induction d => //=.
   split.
@@ -1948,17 +1951,21 @@ Proof with auto_rewrite_cond.
       apply bet_weakening.
       apply bet_reinterpret => //; by [ move/eqP in H0 | rewrite H2; apply/eqP].
 Qed.
+      *)
 
 Lemma tc_to_bet_list: forall C cts bes tm cts',
   check C bes cts = cts' ->
   c_types_agree cts' tm ->
   {tn & (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}.
 Proof.
-  intros.
+  intros C cts bes tm cts' H H0.
   specialize tc_to_bet_conj with (be_size_list bes).
-  move => H1.
+  intros H1.
   destruct H1 as [H1 _].
-  by eapply H1; eauto.
+  apply H1 with (cts' := check C bes cts).
+  - by apply leqnn.
+  - by reflexivity.
+  - rewrite <- H in H0. by apply H0.
 Qed.
 
 Lemma b_e_type_checker_reflects_typing:
@@ -2014,139 +2021,6 @@ Proof with auto_rewrite_cond.
       * by eapply c_types_agree_suffix_single; eauto.
       * move/eqP in IHHbet1. by subst.
     + by apply c_types_agree_weakening.
-Qed.
-
-(* Splitting up b_e_type_checker_iffT_typing *)
-Lemma b_e_type_checker_iffT_typing__true:
-  forall C bes tf, b_e_type_checker C bes tf = true ->
-    iffT (be_typing C bes tf) (true = true).
-Proof.
-  move => C bes tf Htc_bool.
-  destruct tf as [tn tm].
-  split; try reflexivity.
-  intros _.
-  unfold b_e_type_checker in Htc_bool.
-  fold (check C bes (CT_type tn)) in Htc_bool.
-  eapply tc_to_bet_list in Htc_bool; eauto.
-  by destruct Htc_bool as [x [Hagree Hbet]]; auto_rewrite_cond.
-Qed.
-
-(* this hangs too *)
-Lemma b_e_type_checker_iffT_typing__true_1:
-  forall C bes tf, b_e_type_checker C bes tf = true ->
-    be_typing C bes tf.
-Proof.
-  move => C bes tf Htc_bool.
-  destruct tf as [tn tm].
-  unfold b_e_type_checker in Htc_bool.
-  fold (check C bes (CT_type tn)) in Htc_bool.
-  eapply tc_to_bet_list in Htc_bool; eauto.
-  by destruct Htc_bool as [x [Hagree Hbet]]; auto_rewrite_cond.
-Qed.
-
-(* XXX also hangs *)
-Lemma b_e_type_checker_iffT_typing__true_2_pre:
-  forall C bes tn tm, c_types_agree (check C bes (CT_type tn)) tm = true ->
-    be_typing C bes (Tf tn tm).
-Proof.
-  move => C bes tn tm Htc_bool.
-  eapply tc_to_bet_list in Htc_bool; eauto.
-  by destruct Htc_bool as [x [Hagree Hbet]]; auto_rewrite_cond.
-Qed.
-
-(* XXX also hangs *)
-Lemma b_e_type_checker_iffT_typing__true_2:
-  forall C bes tn tm, c_types_agree (check C bes (CT_type tn)) tm = true ->
-  {tn0 : seq value_type & (c_types_agree (CT_type tn) tn0) ** (be_typing C bes (Tf tn0 tm))}.
-Proof.
-  move => C bes tn tm Htc_bool.
-  eapply tc_to_bet_list in Htc_bool; eauto.
-Qed.
-
-(* XXX also hangs *)
-Lemma b_e_type_checker_iffT_typing__true_2_no_eauto:
-  forall C bes tn tm, c_types_agree (check C bes (CT_type tn)) tm = true ->
-  {tn0 : seq value_type & (c_types_agree (CT_type tn) tn0) ** (be_typing C bes (Tf tn0 tm))}.
-Proof.
-  move => C bes tn tm Htc_bool.
-  eapply tc_to_bet_list in Htc_bool.
-  - by apply Htc_bool.
-  - reflexivity.
-Qed.
-
-(* XXX hangs *)
-Lemma b_e_type_checker_iffT_typing__true_2_no_eapply:
-  forall C bes tn tm, c_types_agree (check C bes (CT_type tn)) tm = true ->
-  {tn0 : seq value_type & (c_types_agree (CT_type tn) tn0) ** (be_typing C bes (Tf tn0 tm))}.
-Proof.
-  intros C bes tn tm Htc_bool.
-  apply tc_to_bet_list with (C := C) (bes := bes) (cts := CT_type tn) in Htc_bool.
-  - by apply Htc_bool.
-  - by reflexivity.
-Qed.
-
-(* does not hang! *)
-Lemma b_e_type_checker_iffT_typing__true_3:
-  forall C bes tn tm,
-  {tn0 : seq value_type &
-    (c_types_agree (CT_type tn) tn0) ** (be_typing C bes (Tf tn0 tm))} ->
-    be_typing C bes (Tf tn tm).
-Proof.
-  move => C bes tn tm Htc_bool.
-  destruct Htc_bool as [x [Hagree Hbet]]. auto_rewrite_cond.
-Qed.
-
-(* this does not hang *)
-Lemma b_e_type_checker_iffT_typing__false:
-  forall C bes tf, b_e_type_checker C bes tf = false ->
-    iffT (be_typing C bes tf) (false = true).
-Proof.
-  move => C bes tf Htc_bool.
-  destruct tf as [tn tm].
-  split.
-  + move => Hbet.
-    exfalso.
-  assert (b_e_type_checker C bes (Tf tn tm)) as H; (try by rewrite H in Htc_bool); clear Htc_bool.
-  induction Hbet; subst => //=; unfold type_update => //=; try destruct t, op;
-  (* XXX nasty quick fix: old H is named u/b/r now in different branches
-   * could do explicit naming on induction but it's 32 cases
-   *)
-    try rename b into H; try rename u into H; try rename r into H;
-    try (auto_rewrite_cond; inversion H; auto_rewrite_cond).
-  * unfold convert_cond. auto_rewrite_cond.
-  * unfold same_lab => //=.
-    remember (ins ++ [::i]) as l.
-    rewrite - Heql.
-    destruct l => //=; first by destruct ins.
-    rename i0 into H. (* TODO explicit naming? *)
-    remember H as H2; clear HeqH2.
-    move/allP in H2.
-    assert (n \in (ins ++ [::i])) as Hn; first by rewrite - Heql; rewrite mem_head.
-    apply H2 in Hn.
-    move/andP in Hn; destruct Hn as [H3 H4].
-    unfold plop2 in H4.
-    replace (length (tc_label C) <= n) with false; last by lias.
-    move/eqP in H4.
-    rewrite H4.
-    apply same_lab_h_condition in H.
-    replace (ins ++ [::i])%list with (ins ++ [::i]) in H; last by lias.
-    rewrite - Heql in H.
-    apply same_lab_h_rec in H.
-    rewrite H.
-    rewrite ct_suffix_suffix; auto_rewrite_cond.
-  * destruct tf as [t1 t2] => //=; auto_rewrite_cond.
-  * destruct (List.nth_error (tc_global C) i) => //=; auto_rewrite_cond.
-  * unfold type_update => //=; auto_rewrite_cond.
-  * unfold type_update => //=; auto_rewrite_cond.
-  * auto_rewrite_cond. by destruct (tc_table C) eqn:Hctable => //=.
-  * rewrite List.fold_left_app => //=.
-    unfold c_types_agree in IHHbet1.
-    auto_rewrite_cond.
-    destruct (List.fold_left _ es _) eqn:Htc => //=.
-    -- by eapply c_types_agree_suffix_single; eauto.
-    -- move/eqP in IHHbet1. by subst.
-  * by apply c_types_agree_weakening.
-  + intros Hft. inversion Hft.
 Qed.
 
 (* Trying the above with iffT instead of reflectT
@@ -2229,9 +2103,5 @@ Extraction Language Haskell.
 Recursive Extraction be_typing.
 Recursive Extraction b_e_type_checker.
 Recursive Extraction iffT.
-Extraction b_e_type_checker_iffT_typing__false.
-Extraction b_e_type_checker_iffT_typing__true_2_no_eapply.
-Extraction b_e_type_checker_iffT_typing__true.
+(* Extraction tc_to_bet_conj. XXX hangs *)
 
-(* XXX this hangs *)
-Recursive Extraction b_e_type_checker_iffT_typing.
