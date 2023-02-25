@@ -1804,6 +1804,339 @@ Proof.
   by apply bet_weakening.
 Qed.
 
+Lemma tc_to_bet_conj_single_unreachable d:
+  (forall n : nat,
+  (n < d)%coq_nat ->
+  (forall (C : t_context) (cts : checker_type)
+  (bes : seq basic_instruction) (tm : seq value_type)
+  (cts' : checker_type),
+  be_size_list bes <= n ->
+  check C bes cts = cts' ->
+  c_types_agree cts' tm ->
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}) **
+    (forall (C : t_context) (cts : checker_type) (tm : seq value_type)
+    (e : basic_instruction) (cts' : checker_type),
+    be_size_single e <= n ->
+    check_single C cts e = cts' ->
+    c_types_agree cts' tm ->
+    {tn : seq value_type &
+      (c_types_agree cts tn) ** (be_typing C [:: e] (Tf tn tm))})) ->
+      forall C cts tm, 0 < d -> cts <> CT_bot ->
+      {tn : seq value_type &
+        (c_types_agree cts tn) ** (be_typing C [:: BI_unreachable] (Tf tn tm))}.
+Proof.
+  intros H C cts tm Hs if_expr.
+  exists (populate_ct cts); split; by [apply populate_ct_agree | apply bet_unreachable].
+Qed.
+
+(* this is most likely not the problem as tc_to_bet_conj_single still hangs
+ * with this part admitted*)
+Lemma tc_to_bet_conj_single_if d:
+  (forall n : nat,
+  (n < d)%coq_nat ->
+  (forall (C : t_context) (cts : checker_type)
+  (bes : seq basic_instruction) (tm : seq value_type)
+  (cts' : checker_type),
+  be_size_list bes <= n ->
+  check C bes cts = cts' ->
+  c_types_agree cts' tm ->
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}) **
+    (forall (C : t_context) (cts : checker_type) (tm : seq value_type)
+    (e : basic_instruction) (cts' : checker_type),
+    be_size_single e <= n ->
+    check_single C cts e = cts' ->
+    c_types_agree cts' tm ->
+    {tn : seq value_type &
+      (c_types_agree cts tn) ** (be_typing C [:: e] (Tf tn tm))})) ->
+      forall C cts tm tn' tm' l l0,
+      (1 + (List.fold_left addn [seq be_size_single i | i <- l] 1 + size l) +
+          (List.fold_left addn [seq be_size_single i | i <- l0] 1 + size l0) <= d) ->
+              (c_types_agree
+              (type_update cts (to_ct_list (tn' ++ [:: T_i32])) (CT_type tm')) tm) ->
+              (c_types_agree
+              (List.fold_left (check_single (upd_label C (tm' :: tc_label C))) l
+              (CT_type tn')) tm') ->
+              (c_types_agree
+              (List.fold_left (check_single (upd_label C (tm' :: tc_label C))) l0
+              (CT_type tn')) tm') ->
+              (cts <> CT_bot) ->
+              {tn : seq value_type &
+                (c_types_agree cts tn) **
+                (be_typing C [:: BI_if (Tf tn' tm') l l0] (Tf tn tm))}.
+Proof.
+  intros H C cts tm tn' tm' l l0 Hs Hct2 H0 H1 if_expr.
+  fold_remember_check.
+  fold (be_size_list l) in Hs. (* XXX does nothing? *)
+  fold (be_size_list l0) in Hs.
+    (*
+  + fold_remember_check.
+    fold (be_size_list l) in Hs.
+    fold (be_size_list l0) in Hs.
+    assert (be_size_list l < d)%coq_nat as Hmeasure1; first by lias.
+    assert (be_size_list l0 < d)%coq_nat as Hmeasure2; first by lias.
+    apply H in Hmeasure1.
+    destruct Hmeasure1 as [IH1 _].
+    apply H in Hmeasure2.
+    destruct Hmeasure2 as [IH2 _].
+    eapply IH1 in H0 => //; last by rewrite Heqres_check0.
+    eapply IH2 in H1 => //; last by rewrite Heqres_check.
+    destruct H0 as [tn1'' [Hctif1 Hbet1]].
+    destruct H1 as [tn2'' [Hctif2 Hbet2]].
+    simpl in *.
+    move/eqP in Hctif1; subst.
+    move/eqP in Hctif2; subst.
+    apply bet_if_wasm with (es1 := l) in Hbet2 => //.
+    apply type_update_type_agree in Hct2.
+    destruct Hct2 as [lp [Hct1 Heq]]; subst.
+    exists (lp ++ tn2'' ++ [::T_i32]); split => //.
+    by apply bet_weakening.
+     *)
+Admitted.
+
+Lemma tc_to_bet_conj_single_cvtop d:
+(forall n : nat,
+    (n < d)%coq_nat ->
+    (forall (C : t_context) (cts : checker_type)
+       (bes : seq basic_instruction) (tm : seq value_type)
+       (cts' : checker_type),
+     be_size_list bes <= n ->
+     check C bes cts = cts' ->
+     c_types_agree cts' tm ->
+     {tn : seq value_type &
+     (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}) **
+    (forall (C : t_context) (cts : checker_type) (tm : seq value_type)
+       (e : basic_instruction) (cts' : checker_type),
+     be_size_single e <= n ->
+     check_single C cts e = cts' ->
+     c_types_agree cts' tm ->
+     {tn : seq value_type &
+       (c_types_agree cts tn) ** (be_typing C [:: e] (Tf tn tm))})) ->
+       forall C cts tm v v0,
+
+       (0 < d) ->
+       (c_types_agree (type_update cts [:: CTA_some v0] (CT_type [:: v])) tm) ->
+       (v != v0) ->
+       (t_length v = t_length v0) ->
+       (cts <> CT_bot) ->
+       {tn : seq value_type &
+         (c_types_agree cts tn) **
+         (be_typing C [:: BI_cvtop v CVO_reinterpret v0 None] (Tf tn tm))}.
+Proof.
+  intros H C cts tm v v0 Hs Hct2 H0 H2 if_expr.
+  replace ([::CTA_some v0]) with (to_ct_list [::v0]) in Hct2 => //=.
+  apply type_update_type_agree in Hct2.
+  destruct Hct2 as [tn' [Hct bet]]; subst.
+  exists (tn' ++ [::v0]); split => //.
+  apply bet_weakening.
+  apply bet_reinterpret => //; by [ move/eqP in H0 | rewrite H2; apply/eqP].
+Qed.
+
+(*
+H : forall n : nat,
+    (n < d)%coq_nat ->
+    (forall (C : t_context) (cts : checker_type)
+       (bes : seq basic_instruction) (tm : seq value_type)
+       (cts' : checker_type),
+     be_size_list bes <= n ->
+     check C bes cts = cts' ->
+     c_types_agree cts' tm ->
+     {tn : seq value_type &
+     (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}) **
+    (forall (C : t_context) (cts : checker_type) (tm : seq value_type)
+       (e : basic_instruction) (cts' : checker_type),
+     be_size_single e <= n ->
+     check_single C cts e = cts' ->
+     c_types_agree cts' tm ->
+     {tn : seq value_type &
+     (c_types_agree cts tn) ** (be_typing C [:: e] (Tf tn tm))})
+C : t_context
+cts : checker_type
+tm : seq value_type
+v, v0 : value_type
+Hs : 0 < d
+Hct2 : c_types_agree (type_update cts [:: CTA_some v0] (CT_type [:: v])) tm
+H0 : v != v0
+H2 : t_length v = t_length v0
+if_expr : cts <> CT_bot
+
+========================= (1 / 1)
+
+{tn : seq value_type &
+(c_types_agree cts tn) **
+(be_typing C [:: BI_cvtop v CVO_reinterpret v0 None] (Tf tn tm))}
+ *)
+
+Axiom  tc_to_bet_conj_single_ax_1:
+  forall C cts tm,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_unreachable] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_2:
+  forall C cts' tm,
+  {tn : seq value_type &
+    (c_types_agree cts' tn) ** (be_typing C [:: BI_nop] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_3:
+  forall C cts tm,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_drop] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_4:
+  forall C cts tm,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_select] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_5:
+  forall C cts tm tn' tm' l,
+  {tn : seq value_type &
+    (c_types_agree cts tn) **
+    (be_typing C [:: BI_block (Tf tn' tm') l] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_6:
+  forall C cts tm tn' tm' l,
+  {tn : seq value_type &
+    (c_types_agree cts tn) **
+    (be_typing C [:: BI_loop (Tf tn' tm') l] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_7:
+  forall C cts tm tn' tm' l l0,
+  {tn : seq value_type &
+    (c_types_agree cts tn) **
+    (be_typing C [:: BI_if (Tf tn' tm') l l0] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_8:
+  forall C cts tm i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_br i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_9:
+  forall C cts tm i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_br_if i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_10:
+  forall C cts tm l i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_br_table l i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_11:
+  forall C cts tm,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_return] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_12:
+  forall C cts tm i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_call i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_13:
+  forall C cts tm i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_call_indirect i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_14:
+  forall C cts tm i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_get_local i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_15:
+  forall C cts tm i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_set_local i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_16:
+  forall C cts tm i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_tee_local i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_17:
+  forall C cts tm i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_get_global i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_18:
+  forall C cts tm i,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_set_global i] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_19:
+  forall C cts tm v o a s,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_load v o a s] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_20:
+  forall C cts tm v o a s,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_store v o a s] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_21:
+  forall C cts tm,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_current_memory] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_22:
+  forall C cts tm,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_grow_memory] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_23:
+  forall C cts tm v,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_const v] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_24:
+  forall C cts tm v u,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_unop v (Unop_i u)] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_25:
+  forall C cts tm v u,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_unop v (Unop_f u)] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_26:
+  forall C cts tm v b,
+  {tn : seq value_type &
+    (c_types_agree cts tn) **
+    (be_typing C [:: BI_binop v (Binop_i b)] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_27:
+  forall C cts tm v b,
+  {tn : seq value_type &
+    (c_types_agree cts tn) **
+    (be_typing C [:: BI_binop v (Binop_f b)] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_28:
+  forall C cts tm v t,
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C [:: BI_testop v t] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_29:
+  forall C cts tm v r,
+  {tn : seq value_type &
+    (c_types_agree cts tn) **
+    (be_typing C [:: BI_relop v (Relop_i r)] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_30:
+  forall C cts tm v r,
+  {tn : seq value_type &
+    (c_types_agree cts tn) **
+    (be_typing C [:: BI_relop v (Relop_f r)] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_31:
+  forall C cts tm v v0 o,
+  {tn : seq value_type &
+    (c_types_agree cts tn) **
+    (be_typing C [:: BI_cvtop v CVO_convert v0 o] (Tf tn tm))}.
+
+Axiom tc_to_bet_conj_single_ax_32:
+  forall C cts tm v v0,
+  {tn : seq value_type &
+    (c_types_agree cts tn) **
+    (be_typing C [:: BI_cvtop v CVO_reinterpret v0 None] (Tf tn tm))}.
+
 (* XXX hangs *)
 Lemma tc_to_bet_conj_single d:
   (forall n : nat,
@@ -1832,20 +2165,27 @@ Lemma tc_to_bet_conj_single d:
         (c_types_agree cts tn) ** (be_typing C [:: e] (Tf tn tm))}.
 Proof.
   intros H.
-  destruct e => //=; (try destruct f as [tn' tm']); auto_rewrite_cond; move => ? Hs Hct Hct2; simplify_type_update => //; auto_rewrite_cond.
+  destruct e => //=; try destruct f as [tn' tm']; move => ? Hs Hct Hct2; simplify_type_update => //; auto_rewrite_cond.
 
-  + exists (populate_ct cts); split; by [apply populate_ct_agree | apply bet_unreachable].
+  + by apply tc_to_bet_conj_single_ax_1.
+  + by apply tc_to_bet_conj_single_ax_2.
+  + by apply tc_to_bet_conj_single_ax_3.
 
+    (*
+  + by apply (tc_to_bet_conj_single_unreachable H _ _ Hs if_expr).
   + exists tm; split => //.
     apply bet_weakening_empty_both.
     by apply bet_nop.
 
   + by eapply tc_to_bet_conj_single_drop; eauto.
+     *)
 
   + by apply type_update_select_agree_bet.
 
   + by apply (tc_to_bet_conj_single_block H).
 
+  + by apply tc_to_bet_conj_single_ax_6.
+    (*
   + fold_remember_check.
     assert (be_size_list l < d)%coq_nat as Hmeasure; first by unfold be_size_list; lias.
     apply H in Hmeasure.
@@ -1859,7 +2199,10 @@ Proof.
     destruct Hct2 as [lp [Hct1 Heq]]; subst.
     exists (lp ++ tn''); split => //.
     by apply bet_weakening.
+     *)
 
+  + by apply (tc_to_bet_conj_single_if H).
+    (*
   + fold_remember_check.
     fold (be_size_list l) in Hs.
     fold (be_size_list l0) in Hs.
@@ -1881,7 +2224,9 @@ Proof.
     destruct Hct2 as [lp [Hct1 Heq]]; subst.
     exists (lp ++ tn2'' ++ [::T_i32]); split => //.
     by apply bet_weakening.
+     *)
 
+    (* fine from here onward *)
   + unfold type_update in Hct2.
     assert (consume cts (to_ct_list l) <> CT_bot) as Hconsume; first by destruct (consume _ _).
     apply tc_to_bet_br in Hconsume.
@@ -2067,18 +2412,21 @@ Proof.
     apply bet_convert => //.
     by move/eqP in H0.
 
+  + by apply (tc_to_bet_conj_single_cvtop H _ Hs Hct2 H0 H2 if_expr).
+    (*
   + replace ([::CTA_some v0]) with (to_ct_list [::v0]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
     exists (tn' ++ [::v0]); split => //.
     apply bet_weakening.
     apply bet_reinterpret => //; by [ move/eqP in H0 | rewrite H2; apply/eqP].
+     *)
 Qed.
 
 End Host.
 
 Extraction Language Haskell.
-Extraction tc_to_bet_conj_single.
+Extraction type_update_select_agree_bet.
 
 (* XXX are these causing extraction problems?
  * consider preservation/progress: axioms are used (e.g. classical)
