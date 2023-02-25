@@ -1497,16 +1497,6 @@ Proof with auto_rewrite_cond.
     destruct x1 => //=...
 Qed.
 
-(*
-host_function : eqType
-C : t_context
-tm : seq value_type
-x1, x2 : checker_type_aux
-l : seq checker_type_aux
-x3 : checker_type_aux
- *)
-
-
 Lemma type_update_select_agree_bet: forall C cts tm,
   c_types_agree (type_update_select cts) tm ->
   {tn & (c_types_agree cts tn) ** (be_typing C [::BI_select] (Tf tn tm))}.
@@ -1514,11 +1504,6 @@ Proof with auto_rewrite_cond.
   move => C cts tm Hct.
   unfold type_update_select in Hct...
   destruct cts => //.
-
-  (* XXX this breaks extraction unless *both* branches are admitted
-  - by apply type_update_select_agree_bet_ax_1.
-  - by apply type_update_select_agree_bet_ax_2.
-   *)
 
   - move:Hct.
     rewrite length_is_size.
@@ -1588,6 +1573,10 @@ Proof with auto_rewrite_cond.
           by apply type_update_select_agree_bet__1.
         }
 
+  (* admitting the second branch - now extraction works but takes a few seconds *)
+  - by apply type_update_select_agree_bet_ax_2.
+
+    (*
   - move: Hct.
     case/lastP : l => [|l x1] => //=.
     case/lastP : l => [|l x2] => //=.
@@ -1634,16 +1623,18 @@ Proof with auto_rewrite_cond.
     replace (_+_-_-_) with 1 in H1; last by lias.
     simpl in H1...
     apply bet_select.
+     *)
 Qed.
 
 End Host.
 
 Extraction Language OCaml.
-Recursive Extraction type_update_select_agree_bet.
+Extraction type_update_select_agree_bet__1.
+Extraction type_update_select_agree_bet.
 
 Extraction Language Haskell.
-Recursive Extraction type_update_select_agree_bet__1.
-Recursive Extraction type_update_select_agree_bet.
+(* Extraction type_update_select_agree_bet__1. XXX slow *)
+Extraction type_update_select_agree_bet.
 
 Lemma tc_to_bet_br: forall cts l,
   consume cts (to_ct_list l) <> CT_bot ->
