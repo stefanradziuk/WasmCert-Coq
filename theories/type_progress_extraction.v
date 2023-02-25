@@ -83,7 +83,7 @@ End ProgressExtract.
 
 Extraction Language Haskell.
 
-Extraction "progress_extracted" ProgressExtract DummyHost.
+Recursive Extraction ProgressExtract DummyHost.
 
 (*
  * Depending on the GHC version, the extracted code may have to be patched.
