@@ -1492,8 +1492,33 @@ Proof with auto_rewrite_cond.
   split => //.
   rewrite take_cat size_cat.
 
-  (* moved the rest out *)
+  (* moved the remainder out into a lemma seems to fix haskell extraction? *)
   by apply type_update_select_agree_bet__2_1.
+
+  (*
+  replace (_ < size l) with false; last by simpl; lias.
+  apply bet_weakening.
+  replace (_ + _ - _ - _) with 1; last by simpl; lias.
+  simpl.
+  repeat rewrite nth_rcons in H0.
+  repeat rewrite size_rcons in H0.
+  replace ((size l).+3 - 3 < (size l).+2) with true in H0; last by lias.
+  replace ((size l).+3 - 3 < (size l).+1) with true in H0; last by lias.
+  replace ((size l).+3 - 3 < (size l)) with false in H0; last by lias.
+  replace ((size l).+3 - 3 == (size l)) with true in H0; last by lias.
+  subst.
+  repeat rewrite - cats1 in if_expr0.
+  repeat rewrite - catA in if_expr0.
+  simpl in if_expr0.
+  unfold ct_suffix in if_expr0...
+  unfold to_ct_list in H1.
+  rewrite map_cat in H1...
+  rewrite drop_cat size_map in H1.
+  replace (_<_) with false in H1; last by lias.
+  replace (_+_-_-_) with 1 in H1; last by lias.
+  simpl in H1...
+  apply bet_select.
+   *)
 Qed.
 
 (* XXX this does not hangs but is quite slow to extract *)
@@ -1659,52 +1684,7 @@ Proof with auto_rewrite_cond.
   (* admitting the second branch - now extraction works but takes a few seconds *)
         (* - by apply type_update_select_agree_bet_ax_2. *)
 
-  - move: Hct.
-    case/lastP : l => [|l x1] => //=.
-    case/lastP : l => [|l x2] => //=.
-    case/lastP : l => [|l x3] => //=.
-    move => Hct...
-    repeat rewrite length_is_size in H0.
-    repeat rewrite length_is_size in H.
-    repeat rewrite size_rcons in H0.
-    repeat rewrite size_rcons in H.
-    destruct (List.nth_error _ ((size l).+3 - 2)) eqn:Hnth => //=; last by apply List.nth_error_None in Hnth; rewrite length_is_size in Hnth; repeat rewrite size_rcons in Hnth; lias.
-    symmetry in H0.
-    apply nth_error_ssr with (x0 := v) in Hnth.
-    apply nth_error_ssr with (x0 := v) in H0.
-    repeat rewrite nth_rcons in Hnth.
-    repeat rewrite size_rcons in Hnth.
-    replace ((size l).+3 - 2 < (size l).+2) with true in Hnth; last by lias.
-    replace ((size l).+3 - 2 < (size l).+1) with false in Hnth; last by lias.
-    replace (_ == _) with true in Hnth; last by lias.
-    subst.
-    repeat rewrite - cats1.
-    repeat rewrite -catA. simpl.
-    exists (l ++ [::x3; v; x1]).
-    split => //.
-    rewrite take_cat size_cat.
-    replace (_ < size l) with false; last by simpl; lias.
-    apply bet_weakening.
-    replace (_ + _ - _ - _) with 1; last by simpl; lias.
-    simpl.
-    repeat rewrite nth_rcons in H0.
-    repeat rewrite size_rcons in H0.
-    replace ((size l).+3 - 3 < (size l).+2) with true in H0; last by lias.
-    replace ((size l).+3 - 3 < (size l).+1) with true in H0; last by lias.
-    replace ((size l).+3 - 3 < (size l)) with false in H0; last by lias.
-    replace ((size l).+3 - 3 == (size l)) with true in H0; last by lias.
-    subst.
-    repeat rewrite - cats1 in if_expr0.
-    repeat rewrite - catA in if_expr0.
-    simpl in if_expr0.
-    unfold ct_suffix in if_expr0...
-    unfold to_ct_list in H1.
-    rewrite map_cat in H1...
-    rewrite drop_cat size_map in H1.
-    replace (_<_) with false in H1; last by lias.
-    replace (_+_-_-_) with 1 in H1; last by lias.
-    simpl in H1...
-    apply bet_select.
+  - by apply type_update_select_agree_bet__2.
 Qed.
 
 Lemma tc_to_bet_br: forall cts l,
@@ -2169,14 +2149,12 @@ Qed.
 
 End Host.
 
-(*
 Extraction Language OCaml.
-Extraction type_update_select_agree_bet__1.
-Extraction type_update_select_agree_bet__2.
 Extraction type_update_select_agree_bet.
- *)
 
 Extraction Language Haskell.
+Extraction type_update_select_agree_bet.
+
 Extraction type_update_select_agree_bet__1. (* XXX slow *)
 Extraction type_update_select_agree_bet__2_1.
 Extraction type_update_select_agree_bet__2.

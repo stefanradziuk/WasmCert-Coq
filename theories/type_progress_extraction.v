@@ -81,11 +81,9 @@ Definition fuel_100 : nat := 100.
 
 End ProgressExtract.
 
-(*
 Extraction Language Haskell.
 
 Extraction "progress_extracted" ProgressExtract DummyHost.
- *)
 
 (*
  * Depending on the GHC version, the extracted code may have to be patched.
