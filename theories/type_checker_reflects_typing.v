@@ -1413,6 +1413,44 @@ Axiom type_update_select_agree_bet_ax_2:
   {tn : seq value_type &
     (c_types_agree (CT_type l) tn) ** (be_typing C [:: BI_select] (Tf tn tm))}.
 
+Lemma type_update_select_agree_bet__2_1:
+  forall C x1 l x3 v,
+  (nth v (rcons (rcons (rcons l x3) v) x1) ((size l).+3 - 3) = v) ->
+  (ct_suffix [:: CTA_any; CTA_some T_i32]
+  (to_ct_list (rcons (rcons (rcons l x3) v) x1))) ->
+  (2 < (size l).+3) ->
+  be_typing C [:: BI_select]
+  (Tf (l ++ [:: x3; v; x1])
+  (if size l + size [:: x3; v; x1] - 2 < size l
+  then take (size l + size [:: x3; v; x1] - 2) l
+  else
+  l ++ take (size l + size [:: x3; v; x1] - 2 - size l) [:: x3; v; x1])).
+Proof with auto_rewrite_cond.
+  intros C x1 l x3 v H0 if_expr0 H.
+  replace (_ < size l) with false; last by simpl; lias.
+  apply bet_weakening.
+  replace (_ + _ - _ - _) with 1; last by simpl; lias.
+  simpl.
+  repeat rewrite nth_rcons in H0.
+  repeat rewrite size_rcons in H0.
+  replace ((size l).+3 - 3 < (size l).+2) with true in H0; last by lias.
+  replace ((size l).+3 - 3 < (size l).+1) with true in H0; last by lias.
+  replace ((size l).+3 - 3 < (size l)) with false in H0; last by lias.
+  replace ((size l).+3 - 3 == (size l)) with true in H0; last by lias.
+  subst.
+  repeat rewrite - cats1 in if_expr0.
+  repeat rewrite - catA in if_expr0.
+  simpl in if_expr0.
+  unfold ct_suffix in if_expr0...
+  unfold to_ct_list in H1.
+  rewrite map_cat in H1...
+  rewrite drop_cat size_map in H1.
+  replace (_<_) with false in H1; last by lias.
+  replace (_+_-_-_) with 1 in H1; last by lias.
+  simpl in H1...
+  apply bet_select.
+Qed.
+
 (* XXX This seems to be what gets stuck? *)
 Lemma type_update_select_agree_bet__2:
   forall C l tm,
@@ -1453,28 +1491,9 @@ Proof with auto_rewrite_cond.
   exists (l ++ [::x3; v; x1]).
   split => //.
   rewrite take_cat size_cat.
-  replace (_ < size l) with false; last by simpl; lias.
-  apply bet_weakening.
-  replace (_ + _ - _ - _) with 1; last by simpl; lias.
-  simpl.
-  repeat rewrite nth_rcons in H0.
-  repeat rewrite size_rcons in H0.
-  replace ((size l).+3 - 3 < (size l).+2) with true in H0; last by lias.
-  replace ((size l).+3 - 3 < (size l).+1) with true in H0; last by lias.
-  replace ((size l).+3 - 3 < (size l)) with false in H0; last by lias.
-  replace ((size l).+3 - 3 == (size l)) with true in H0; last by lias.
-  subst.
-  repeat rewrite - cats1 in if_expr0.
-  repeat rewrite - catA in if_expr0.
-  simpl in if_expr0.
-  unfold ct_suffix in if_expr0...
-  unfold to_ct_list in H1.
-  rewrite map_cat in H1...
-  rewrite drop_cat size_map in H1.
-  replace (_<_) with false in H1; last by lias.
-  replace (_+_-_-_) with 1 in H1; last by lias.
-  simpl in H1...
-  apply bet_select.
+
+  (* moved the rest out *)
+  by apply type_update_select_agree_bet__2_1.
 Qed.
 
 (* XXX this does not hangs but is quite slow to extract *)
@@ -1687,18 +1706,6 @@ Proof with auto_rewrite_cond.
     simpl in H1...
     apply bet_select.
 Qed.
-
-End Host.
-
-Extraction Language OCaml.
-Extraction type_update_select_agree_bet__1.
-Extraction type_update_select_agree_bet__2.
-Extraction type_update_select_agree_bet.
-
-Extraction Language Haskell.
-(* Extraction type_update_select_agree_bet__1. XXX slow *)
-Extraction type_update_select_agree_bet__2.
-Extraction type_update_select_agree_bet.
 
 Lemma tc_to_bet_br: forall cts l,
   consume cts (to_ct_list l) <> CT_bot ->
@@ -2162,87 +2169,14 @@ Qed.
 
 End Host.
 
-Extraction Language Haskell.
-Recursive Extraction ct_suffix_1_impl ct_suffix_any_1.
-Recursive Extraction size_ct_list size_cat.
-Recursive Extraction ct_suffix to_ct_list.
-Recursive Extraction map_cat drop_cat size_map.
-Recursive Extraction size_rcons cats1 catA.
-Recursive Extraction lastP subnn drop0.
-Recursive Extraction andP.
-Recursive Extraction nth_error_ssr nth_cat.
-Recursive Extraction select_return_top.
-
 (*
-          - repeat rewrite length_is_size size_cat in Hct.
-            replace (size l + size _ - 3) with (size l) in Hct; last by simpl; lias.
-            rewrite take_cat subnn take0 cats0 take_size in Hct.
-            replace (_<_) with false in Hct; last by lias.
-            unfold ct_suffix in if_expr...
-            replace (size l + 3 - 3) with (size l) in H0; last by lias.
-            rewrite drop_cat subnn drop0 in H0.
-            replace (_<_) with false in H0; last by lias.
-            auto_rewrite_cond.
-            move : Hct.
-            case/lastP: tm => [|tm x] => //=; move => Hct.
-            + destruct c, c0; unfold c_types_agree, ct_suffix; auto_rewrite_cond; by destruct l => //=.
-            + replace (_+_-_) with (size l) in Hct; last by lias.
-              rewrite take_cat subnn take0 cats0 in Hct.
-              replace (_<_) with false in Hct; last by lias.
-              exists (tm ++ [::x; x; T_i32]).
-              repeat rewrite cats1 in Hct.
-              split; last by rewrite - cats1; apply bet_weakening; apply bet_select.
-              destruct c , c0 => //=; auto_rewrite_cond; unfold to_ct_list in Hct; rewrite map_rcons in Hct; (try rewrite cats1 in Hct); apply ct_suffix_rcons in Hct; destruct Hct; unfold to_ct_list; rewrite map_cat; apply ct_suffix_append_compat => //=...
-          - unfold ct_suffix in *; destruct l; auto_rewrite_cond; last by lias.
-            replace (ct_compat c0 CTA_any) with true in if_expr; last by destruct c0.
-            replace (ct_compat c CTA_any) with true in if_expr; last by destruct c.
-            simpl in if_expr.
-            destruct x1 => //=...
-        }
-  - move: Hct.
-    case/lastP : l => [|l x1] => //=.
-    case/lastP : l => [|l x2] => //=.
-    case/lastP : l => [|l x3] => //=.
-    move => Hct...
-    repeat rewrite length_is_size in H0.
-    repeat rewrite length_is_size in H.
-    repeat rewrite size_rcons in H0.
-    repeat rewrite size_rcons in H.
-    destruct (List.nth_error _ ((size l).+3 - 2)) eqn:Hnth => //=; last by apply List.nth_error_None in Hnth; rewrite length_is_size in Hnth; repeat rewrite size_rcons in Hnth; lias.
-    symmetry in H0.
-    apply nth_error_ssr with (x0 := v) in Hnth.
-    apply nth_error_ssr with (x0 := v) in H0.
-    repeat rewrite nth_rcons in Hnth.
-    repeat rewrite size_rcons in Hnth.
-    replace ((size l).+3 - 2 < (size l).+2) with true in Hnth; last by lias.
-    replace ((size l).+3 - 2 < (size l).+1) with false in Hnth; last by lias.
-    replace (_ == _) with true in Hnth; last by lias.
-    subst.
-    repeat rewrite - cats1.
-    repeat rewrite -catA. simpl.
-    exists (l ++ [::x3; v; x1]).
-    split => //.
-    rewrite take_cat size_cat.
-    replace (_ < size l) with false; last by simpl; lias.
-    apply bet_weakening.
-    replace (_ + _ - _ - _) with 1; last by simpl; lias.
-    simpl.
-    repeat rewrite nth_rcons in H0.
-    repeat rewrite size_rcons in H0.
-    replace ((size l).+3 - 3 < (size l).+2) with true in H0; last by lias.
-    replace ((size l).+3 - 3 < (size l).+1) with true in H0; last by lias.
-    replace ((size l).+3 - 3 < (size l)) with false in H0; last by lias.
-    replace ((size l).+3 - 3 == (size l)) with true in H0; last by lias.
-    subst.
-    repeat rewrite - cats1 in if_expr0.
-    repeat rewrite - catA in if_expr0.
-    simpl in if_expr0.
-    unfold ct_suffix in if_expr0...
-    unfold to_ct_list in H1.
-    rewrite map_cat in H1...
-    rewrite drop_cat size_map in H1.
-    replace (_<_) with false in H1; last by lias.
-    replace (_+_-_-_) with 1 in H1; last by lias.
-    simpl in H1...
-    apply bet_select.
-*)
+Extraction Language OCaml.
+Extraction type_update_select_agree_bet__1.
+Extraction type_update_select_agree_bet__2.
+Extraction type_update_select_agree_bet.
+ *)
+
+Extraction Language Haskell.
+Extraction type_update_select_agree_bet__1. (* XXX slow *)
+Extraction type_update_select_agree_bet__2_1.
+Extraction type_update_select_agree_bet__2.
