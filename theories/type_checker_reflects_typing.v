@@ -1451,6 +1451,45 @@ Proof with auto_rewrite_cond.
   apply bet_select.
 Qed.
 
+Lemma type_update_select_agree_bet__2_2:
+  forall C x1 l v,
+  ct_suffix [:: CTA_any; CTA_some T_i32]
+  (to_ct_list (rcons (rcons (rcons l v) v) x1)) ->
+  2 < (size l).+3 ->
+  be_typing C [:: BI_select] (Tf [:: v; v; x1] [:: v]).
+Proof with auto_rewrite_cond.
+  intros C x1 l v if_expr0 H.
+  repeat rewrite - cats1 in if_expr0.
+  repeat rewrite - catA in if_expr0.
+  simpl in if_expr0.
+  unfold ct_suffix in if_expr0...
+  unfold to_ct_list in H1.
+  rewrite map_cat in H1...
+  rewrite drop_cat size_map in H1.
+  replace (_<_) with false in H1; last by lias.
+  replace (_+_-_-_) with 1 in H1; last by lias.
+  simpl in H1...
+  apply bet_select.
+Qed.
+
+Lemma type_update_select_agree_bet__2_3:
+  forall C x1 l v,
+  2 < (size l).+3 ->
+  1 < size l + 3 ->
+  ct_list_compat
+  (drop (size l + 3 - 2) [seq CTA_some i | i <- l ++ [:: v; v; x1]])
+      [:: CTA_any; CTA_some T_i32] ->
+      be_typing C [:: BI_select] (Tf [:: v; v; x1] [:: v]).
+Proof with auto_rewrite_cond.
+  intros C x1 l v H H0 H1.
+  rewrite map_cat in H1...
+  rewrite drop_cat size_map in H1.
+  replace (_<_) with false in H1; last by lias.
+  replace (_+_-_-_) with 1 in H1; last by lias.
+  simpl in H1...
+  apply bet_select.
+Qed.
+
 (* XXX This seems to be what gets stuck? *)
 Lemma type_update_select_agree_bet__2:
   forall C l tm,
@@ -1507,11 +1546,21 @@ Proof with auto_rewrite_cond.
   replace ((size l).+3 - 3 < (size l)) with false in H0; last by lias.
   replace ((size l).+3 - 3 == (size l)) with true in H0; last by lias.
   subst.
+  *)
+
+  (* by apply (type_update_select_agree_bet__2_2 _ if_expr0 H). *)
+
+  (*
   repeat rewrite - cats1 in if_expr0.
   repeat rewrite - catA in if_expr0.
   simpl in if_expr0.
   unfold ct_suffix in if_expr0...
   unfold to_ct_list in H1.
+   *)
+
+  (* by apply (type_update_select_agree_bet__2_3 _ H). *)
+
+  (*
   rewrite map_cat in H1...
   rewrite drop_cat size_map in H1.
   replace (_<_) with false in H1; last by lias.
@@ -2149,6 +2198,7 @@ Qed.
 
 End Host.
 
+(*
 Extraction Language OCaml.
 Extraction type_update_select_agree_bet.
 
@@ -2158,3 +2208,4 @@ Extraction type_update_select_agree_bet.
 Extraction type_update_select_agree_bet__1. (* XXX slow *)
 Extraction type_update_select_agree_bet__2_1.
 Extraction type_update_select_agree_bet__2.
+ *)
