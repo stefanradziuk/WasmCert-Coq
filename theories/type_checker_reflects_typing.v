@@ -1759,6 +1759,51 @@ Proof.
     by apply bet_drop.
 Qed.
 
+Lemma tc_to_bet_conj_single_block d:
+  (forall n : nat,
+  (n < d)%coq_nat ->
+  (forall (C : t_context) (cts : checker_type)
+  (bes : seq basic_instruction) (tm : seq value_type)
+  (cts' : checker_type),
+  be_size_list bes <= n ->
+  check C bes cts = cts' ->
+  c_types_agree cts' tm ->
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}) **
+    (forall (C : t_context) (cts : checker_type) (tm : seq value_type)
+    (e : basic_instruction) (cts' : checker_type),
+    be_size_single e <= n ->
+    check_single C cts e = cts' ->
+    c_types_agree cts' tm ->
+    {tn : seq value_type &
+      (c_types_agree cts tn) ** (be_typing C [:: e] (Tf tn tm))})) ->
+      forall C cts tm tn' tm' l,
+      (1 + List.fold_left addn [seq be_size_single i | i <- l] 1 + size l <= d) ->
+          (c_types_agree
+          (List.fold_left (check_single (upd_label C (tm' :: tc_label C)))
+          l (CT_type tn')) tm') ->
+          (c_types_agree (type_update cts (to_ct_list tn') (CT_type tm')) tm) ->
+          (cts <> CT_bot) ->
+          {tn : seq value_type &
+            (c_types_agree cts tn) **
+            (be_typing C [:: BI_block (Tf tn' tm') l] (Tf tn tm))}.
+Proof.
+  intros H C cts tm tn' tm' l Hs if_expr0 Hct2 if_expr.
+  fold_remember_check.
+  assert (be_size_list l < d)%coq_nat as Hmeasure; first by unfold be_size_list; lias.
+  apply H in Hmeasure.
+  destruct Hmeasure as [IH _].
+  eapply IH in if_expr0 => //; last by rewrite Heqres_check.
+  destruct if_expr0 as [tn'' [Hct1 Hbet]].
+  simpl in Hct1.
+  move/eqP in Hct1; subst.
+  apply bet_block in Hbet.
+  apply type_update_type_agree in Hct2.
+  destruct Hct2 as [lp [Hct1 Heq]]; subst.
+  exists (lp ++ tn''); split => //.
+  by apply bet_weakening.
+Qed.
+
 (* XXX hangs *)
 Lemma tc_to_bet_conj_single d:
   (forall n : nat,
@@ -1785,9 +1830,9 @@ Lemma tc_to_bet_conj_single d:
       c_types_agree cts' tm ->
       {tn : seq value_type &
         (c_types_agree cts tn) ** (be_typing C [:: e] (Tf tn tm))}.
-Proof with auto_rewrite_cond.
+Proof.
   intros H.
-  destruct e => //=; (try destruct f as [tn' tm']); auto_rewrite_cond; move => ? Hs Hct Hct2; simplify_type_update => //...
+  destruct e => //=; (try destruct f as [tn' tm']); auto_rewrite_cond; move => ? Hs Hct Hct2; simplify_type_update => //; auto_rewrite_cond.
 
   + exists (populate_ct cts); split; by [apply populate_ct_agree | apply bet_unreachable].
 
@@ -1796,56 +1841,10 @@ Proof with auto_rewrite_cond.
     by apply bet_nop.
 
   + by eapply tc_to_bet_conj_single_drop; eauto.
-    (*
-  + destruct cts => //=; clear if_expr.
-    * move: Hct2. case/lastP : l => [| l x] => //=; move => Hsuf.
-      { exists (tm ++ [::T_i32]); split; first by apply ct_suffix_empty.
-        apply bet_weakening_empty_2.
-        by apply bet_drop.
-      }
-      { exists (tm ++ [::populate_ct_aux_single x]).
-        split; last by apply bet_weakening_empty_2; apply bet_drop.
-        rewrite cats1.
-        unfold to_ct_list.
-        rewrite map_rcons.
-        apply ct_suffix_rcons.
-        split; first by destruct x => //=.
-        rewrite ct_suffix_any_1 in Hsuf; last by rewrite size_rcons.
-        rewrite - cats1 in Hsuf.
-        simpl in Hsuf.
-        rewrite size_cat take_cat in Hsuf.
-        simpl in Hsuf.
-        replace (size l + 1 - 1) with (size l) in Hsuf; last by lias.
-        rewrite subnn take_size cats0 in Hsuf.
-        by destruct (size l < size l) => //=.
-      }
-    * simpl in Hct2...
-      exists l; split => //.
-      move: if_expr. case/lastP: l => [|l x] => //=; move => _.
-      rewrite - cats1.
-      rewrite size_cat take_cat => /=.
-      replace (size l + 1 - 1) with (size l); last by lias.
-      rewrite take_size subnn cats0.
-      replace (size l < size l) with false; last by clear H; lias.
-      apply bet_weakening_empty_2.
-      by apply bet_drop.
-     *)
 
   + by apply type_update_select_agree_bet.
 
-  + fold_remember_check.
-    assert (be_size_list l < d)%coq_nat as Hmeasure; first by unfold be_size_list; lias.
-    apply H in Hmeasure.
-    destruct Hmeasure as [IH _].
-    eapply IH in if_expr0 => //; last by rewrite Heqres_check.
-    destruct if_expr0 as [tn'' [Hct1 Hbet]].
-    simpl in Hct1.
-    move/eqP in Hct1; subst.
-    apply bet_block in Hbet.
-    apply type_update_type_agree in Hct2.
-    destruct Hct2 as [lp [Hct1 Heq]]; subst.
-    exists (lp ++ tn''); split => //.
-    by apply bet_weakening.
+  + by apply (tc_to_bet_conj_single_block H).
 
   + fold_remember_check.
     assert (be_size_list l < d)%coq_nat as Hmeasure; first by unfold be_size_list; lias.
@@ -1912,14 +1911,14 @@ Proof with auto_rewrite_cond.
     exists (tn ++ l); split => //.
     by apply bet_return.
 
-  + destruct f...
+  + destruct f; auto_rewrite_cond.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct Hbet]]; subst.
     exists (tn' ++ r); split => //=.
     apply bet_weakening.
     by apply bet_call.
 
-  + destruct f...
+  + destruct f; auto_rewrite_cond.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct Hbet]]; subst.
     exists (tn' ++ r ++ [::T_i32]); split => //=.
@@ -2064,7 +2063,7 @@ Proof with auto_rewrite_cond.
     destruct Hct2 as [tn' [Hct bet]]; subst.
     exists (tn' ++ [::v0]); split => //.
     apply bet_weakening.
-    unfold convert_cond in if_expr0...
+    unfold convert_cond in if_expr0; auto_rewrite_cond.
     apply bet_convert => //.
     by move/eqP in H0.
 
@@ -2076,10 +2075,15 @@ Proof with auto_rewrite_cond.
     apply bet_reinterpret => //; by [ move/eqP in H0 | rewrite H2; apply/eqP].
 Qed.
 
+End Host.
+
+Extraction Language Haskell.
+Extraction tc_to_bet_conj_single.
+
 (* XXX are these causing extraction problems?
  * consider preservation/progress: axioms are used (e.g. classical)
  * but not for any of the compoutationally relevant bits *)
-Print Assumptions tc_to_bet_conj_single.
+(* Print Assumptions tc_to_bet_conj_single. *)
 
 (*
   The first part of the conjunction is what is required, but we need to prove it by simultaneous
@@ -2099,7 +2103,7 @@ Lemma tc_to_bet_conj d:
   check_single C cts e = cts' ->
   c_types_agree cts' tm ->
   {tn & (c_types_agree cts tn) ** (be_typing C ([:: e]) (Tf tn tm))}).
-Proof with auto_rewrite_cond.
+Proof.
   strong induction d => //=.
   split.
   (* List *)
