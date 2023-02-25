@@ -1700,6 +1700,65 @@ Proof.
     by apply Hbets.
 Qed.
 
+Lemma tc_to_bet_conj_single_drop d:
+  (forall n : nat,
+  (n < d)%coq_nat ->
+  (forall (C : t_context) (cts : checker_type)
+  (bes : seq basic_instruction) (tm : seq value_type)
+  (cts' : checker_type),
+  be_size_list bes <= n ->
+  check C bes cts = cts' ->
+  c_types_agree cts' tm ->
+  {tn : seq value_type &
+    (c_types_agree cts tn) ** (be_typing C bes (Tf tn tm))}) **
+    (forall (C : t_context) (cts : checker_type) (tm : seq value_type)
+    (e : basic_instruction) (cts' : checker_type),
+    be_size_single e <= n ->
+    check_single C cts e = cts' ->
+    c_types_agree cts' tm ->
+    {tn : seq value_type &
+      (c_types_agree cts tn) ** (be_typing C [:: e] (Tf tn tm))})) ->
+      forall C cts tm,
+      (0 < d) -> c_types_agree (consume cts [:: CTA_any]) tm ->
+      cts <> CT_bot ->
+      {tn : seq value_type &
+        (c_types_agree cts tn) ** (be_typing C [:: BI_drop] (Tf tn tm))}.
+Proof.
+  intros H C cts tm Hs Hct2 if_expr.
+  destruct cts => //=; clear if_expr.
+  * move: Hct2. case/lastP : l => [| l x] => //=; move => Hsuf.
+    { exists (tm ++ [::T_i32]); split; first by apply ct_suffix_empty.
+      apply bet_weakening_empty_2.
+      by apply bet_drop.
+    }
+    { exists (tm ++ [::populate_ct_aux_single x]).
+      split; last by apply bet_weakening_empty_2; apply bet_drop.
+      rewrite cats1.
+      unfold to_ct_list.
+      rewrite map_rcons.
+      apply ct_suffix_rcons.
+      split; first by destruct x => //=.
+      rewrite ct_suffix_any_1 in Hsuf; last by rewrite size_rcons.
+      rewrite - cats1 in Hsuf.
+      simpl in Hsuf.
+      rewrite size_cat take_cat in Hsuf.
+      simpl in Hsuf.
+      replace (size l + 1 - 1) with (size l) in Hsuf; last by lias.
+      rewrite subnn take_size cats0 in Hsuf.
+      by destruct (size l < size l) => //=.
+    }
+  * simpl in Hct2; auto_rewrite_cond.
+    exists l; split => //.
+    move: if_expr. case/lastP: l => [|l x] => //=; move => _.
+    rewrite - cats1.
+    rewrite size_cat take_cat => /=.
+    replace (size l + 1 - 1) with (size l); last by lias.
+    rewrite take_size subnn cats0.
+    replace (size l < size l) with false; last by clear H; lias.
+    apply bet_weakening_empty_2.
+    by apply bet_drop.
+Qed.
+
 (* XXX hangs *)
 Lemma tc_to_bet_conj_single d:
   (forall n : nat,
@@ -1729,10 +1788,15 @@ Lemma tc_to_bet_conj_single d:
 Proof with auto_rewrite_cond.
   intros H.
   destruct e => //=; (try destruct f as [tn' tm']); auto_rewrite_cond; move => ? Hs Hct Hct2; simplify_type_update => //...
+
   + exists (populate_ct cts); split; by [apply populate_ct_agree | apply bet_unreachable].
+
   + exists tm; split => //.
     apply bet_weakening_empty_both.
     by apply bet_nop.
+
+  + by eapply tc_to_bet_conj_single_drop; eauto.
+    (*
   + destruct cts => //=; clear if_expr.
     * move: Hct2. case/lastP : l => [| l x] => //=; move => Hsuf.
       { exists (tm ++ [::T_i32]); split; first by apply ct_suffix_empty.
@@ -1765,7 +1829,10 @@ Proof with auto_rewrite_cond.
       replace (size l < size l) with false; last by clear H; lias.
       apply bet_weakening_empty_2.
       by apply bet_drop.
+     *)
+
   + by apply type_update_select_agree_bet.
+
   + fold_remember_check.
     assert (be_size_list l < d)%coq_nat as Hmeasure; first by unfold be_size_list; lias.
     apply H in Hmeasure.
@@ -1779,6 +1846,7 @@ Proof with auto_rewrite_cond.
     destruct Hct2 as [lp [Hct1 Heq]]; subst.
     exists (lp ++ tn''); split => //.
     by apply bet_weakening.
+
   + fold_remember_check.
     assert (be_size_list l < d)%coq_nat as Hmeasure; first by unfold be_size_list; lias.
     apply H in Hmeasure.
@@ -1792,6 +1860,7 @@ Proof with auto_rewrite_cond.
     destruct Hct2 as [lp [Hct1 Heq]]; subst.
     exists (lp ++ tn''); split => //.
     by apply bet_weakening.
+
   + fold_remember_check.
     fold (be_size_list l) in Hs.
     fold (be_size_list l0) in Hs.
@@ -1813,17 +1882,20 @@ Proof with auto_rewrite_cond.
     destruct Hct2 as [lp [Hct1 Heq]]; subst.
     exists (lp ++ tn2'' ++ [::T_i32]); split => //.
     by apply bet_weakening.
+
   + unfold type_update in Hct2.
     assert (consume cts (to_ct_list l) <> CT_bot) as Hconsume; first by destruct (consume _ _).
     apply tc_to_bet_br in Hconsume.
     destruct Hconsume as [tn Hcts].
     exists (tn ++ l); split => //.
     apply bet_br => //; by unfold plop2; rewrite match_expr.
+
   + apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hctif Hbet]]. subst.
     exists (tn' ++ l ++ [::T_i32]); split => //.
     apply bet_weakening.
     apply bet_br_if => //; by unfold plop2; rewrite match_expr.
+
   + unfold type_update in Hct2.
     assert (consume cts (to_ct_list (l0 ++ [::T_i32])) <> CT_bot) as Hconsume; first by destruct (consume _ _).
     apply tc_to_bet_br in Hconsume.
@@ -1832,18 +1904,21 @@ Proof with auto_rewrite_cond.
     apply bet_br_table.
     apply same_lab_h_all.
     by apply same_lab_same_lab_h.
+
   + unfold type_update in Hct2.
     assert (consume cts (to_ct_list l) <> CT_bot) as Hconsume; first by destruct (consume _ _).
     apply tc_to_bet_br in Hconsume.
     destruct Hconsume as [tn Hcts].
     exists (tn ++ l); split => //.
     by apply bet_return.
+
   + destruct f...
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct Hbet]]; subst.
     exists (tn' ++ r); split => //=.
     apply bet_weakening.
     by apply bet_call.
+
   + destruct f...
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct Hbet]]; subst.
@@ -1851,6 +1926,7 @@ Proof with auto_rewrite_cond.
     apply bet_weakening.
     apply bet_call_indirect => //=.
     by destruct (tc_table C) => //=.
+
   + replace ([::]) with (to_ct_list [::]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1858,18 +1934,21 @@ Proof with auto_rewrite_cond.
     exists tn'; split => //=.
     apply bet_weakening_empty_1.
     by apply bet_get_local.
+
   + replace ([::CTA_some v]) with (to_ct_list [::v]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
     exists (tn' ++ [::v]); split => //.
     apply bet_weakening.
     by apply bet_set_local.
+
   + replace ([::CTA_some v]) with (to_ct_list [::v]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
     exists (tn' ++ [::v]); split => //.
     apply bet_weakening.
     by apply bet_tee_local.
+
   + replace ([::]) with (to_ct_list [::]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1877,23 +1956,27 @@ Proof with auto_rewrite_cond.
     exists tn'; split => //=.
     apply bet_weakening_empty_1.
     apply bet_get_global => //=; by auto_rewrite_cond.
+
   + replace ([::CTA_some (tg_t g)]) with (to_ct_list [::tg_t g]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
     exists (tn' ++ [::tg_t g]); split => //.
     apply bet_weakening.
     by eapply bet_set_global; eauto.
+
   + replace ([::CTA_some T_i32]) with (to_ct_list [::T_i32]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
     exists (tn' ++ [::T_i32]); split => //.
     apply bet_weakening.
     apply bet_load => //; by destruct C.(tc_memory) => //=.
+
   + replace ([::CTA_some T_i32; CTA_some v]) with (to_ct_list [::T_i32; v]) in Hct2 => //.
     apply consume_type_agree in Hct2.
     exists (tm ++ [::T_i32; v]); split => //.
     apply bet_weakening_empty_2.
     apply bet_store => //; by destruct C.(tc_memory) => //=.
+
   + assert (c_types_agree (type_update cts (to_ct_list [::]) (CT_type [::T_i32])) tm) as Hct3.
     * simplify_type_update.
       by unfold produce => //=.
@@ -1903,12 +1986,14 @@ Proof with auto_rewrite_cond.
       exists tn'; split => //.
       apply bet_weakening_empty_1.
       apply bet_current_memory => //; by destruct C.(tc_memory) => //=.
+
   + replace ([::CTA_some T_i32]) with (to_ct_list [::T_i32]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
     exists (tn' ++ [::T_i32]); split => //.
     apply bet_weakening.
     apply bet_grow_memory => //; by destruct C.(tc_memory) => //=.
+
   + assert (c_types_agree (type_update cts (to_ct_list [::]) (CT_type [::typeof v])) tm) as Hct3.
     * simplify_type_update.
       by unfold produce => //=.
@@ -1918,6 +2003,7 @@ Proof with auto_rewrite_cond.
       exists tn'; split => //.
       apply bet_weakening_empty_1.
       by apply bet_const.
+
   + replace ([::CTA_some v]) with (to_ct_list [::v]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1925,6 +2011,7 @@ Proof with auto_rewrite_cond.
     apply bet_weakening.
     apply bet_unop.
     destruct v => //=; by [apply Unop_i32_agree | apply Unop_i64_agree].
+
   + replace ([::CTA_some v]) with (to_ct_list [::v]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1932,6 +2019,7 @@ Proof with auto_rewrite_cond.
     apply bet_weakening.
     apply bet_unop.
     destruct v => //=; by [apply Unop_f32_agree | apply Unop_f64_agree].
+
   + replace ([::CTA_some v; CTA_some v]) with (to_ct_list [::v; v]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1939,6 +2027,7 @@ Proof with auto_rewrite_cond.
     apply bet_weakening.
     apply bet_binop.
     destruct v => //=; by [apply Binop_i32_agree | apply Binop_i64_agree].
+
   + replace ([::CTA_some v; CTA_some v]) with (to_ct_list [::v; v]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1946,12 +2035,14 @@ Proof with auto_rewrite_cond.
     apply bet_weakening.
     apply bet_binop.
     destruct v => //=; by [apply Binop_f32_agree | apply Binop_f64_agree].
+
   + replace ([::CTA_some v]) with (to_ct_list [::v]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
     exists (tn' ++ [::v]); split => //.
     apply bet_weakening.
     by apply bet_testop.
+
   + replace ([::CTA_some v; CTA_some v]) with (to_ct_list [::v; v]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1959,6 +2050,7 @@ Proof with auto_rewrite_cond.
     apply bet_weakening.
     apply bet_relop.
     destruct v => //=; by [apply Relop_i32_agree | apply Relop_i64_agree].
+
   + replace ([::CTA_some v; CTA_some v]) with (to_ct_list [::v; v]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1966,6 +2058,7 @@ Proof with auto_rewrite_cond.
     apply bet_weakening.
     apply bet_relop.
     destruct v => //=; by [apply Relop_f32_agree | apply Relop_f64_agree].
+
   + replace ([::CTA_some v0]) with (to_ct_list [::v0]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1974,6 +2067,7 @@ Proof with auto_rewrite_cond.
     unfold convert_cond in if_expr0...
     apply bet_convert => //.
     by move/eqP in H0.
+
   + replace ([::CTA_some v0]) with (to_ct_list [::v0]) in Hct2 => //=.
     apply type_update_type_agree in Hct2.
     destruct Hct2 as [tn' [Hct bet]]; subst.
@@ -1985,7 +2079,7 @@ Qed.
 (* XXX are these causing extraction problems?
  * consider preservation/progress: axioms are used (e.g. classical)
  * but not for any of the compoutationally relevant bits *)
-Print Assumptions tc_to_bet_conj_list.
+Print Assumptions tc_to_bet_conj_single.
 
 (*
   The first part of the conjunction is what is required, but we need to prove it by simultaneous
@@ -2165,6 +2259,7 @@ Recursive Extraction be_typing.
 Recursive Extraction b_e_type_checker.
 Recursive Extraction iffT.
 Extraction tc_to_bet_conj_list.
-Extraction tc_to_bet_conj_single.
+Extraction tc_to_bet_conj_single_drop.
+Extraction tc_to_bet_conj_single. (* XXX hangs *)
 Extraction tc_to_bet_conj. (* XXX hangs *)
 
