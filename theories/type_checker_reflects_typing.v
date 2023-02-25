@@ -1413,7 +1413,71 @@ Axiom type_update_select_agree_bet_ax_2:
   {tn : seq value_type &
     (c_types_agree (CT_type l) tn) ** (be_typing C [:: BI_select] (Tf tn tm))}.
 
-(* XXX this hangs BUT the rest of the proof still hangs even with this admitted *)
+(* XXX This seems to be what gets stuck? *)
+Lemma type_update_select_agree_bet__2:
+  forall C l tm,
+  c_types_agree
+  (if
+  (2 < length l) &&
+  (List.nth_error l (length l - 2) == List.nth_error l (length l - 3))
+  then
+  if ct_suffix [:: CTA_any; CTA_some T_i32] (to_ct_list l)
+  then CT_type (take (size l - 2) l)
+  else CT_bot
+  else CT_bot) tm ->
+  {tn : seq value_type &
+    (c_types_agree (CT_type l) tn) ** (be_typing C [:: BI_select] (Tf tn tm))}.
+Proof with auto_rewrite_cond.
+  intros C l tm Hct.
+  move: Hct.
+  case/lastP : l => [|l x1] => //=.
+  case/lastP : l => [|l x2] => //=.
+  case/lastP : l => [|l x3] => //=.
+  move => Hct...
+  repeat rewrite length_is_size in H0.
+  repeat rewrite length_is_size in H.
+  repeat rewrite size_rcons in H0.
+  repeat rewrite size_rcons in H.
+  destruct (List.nth_error _ ((size l).+3 - 2)) eqn:Hnth => //=; last by apply List.nth_error_None in Hnth; rewrite length_is_size in Hnth; repeat rewrite size_rcons in Hnth; lias.
+  symmetry in H0.
+  apply nth_error_ssr with (x0 := v) in Hnth.
+  apply nth_error_ssr with (x0 := v) in H0.
+  repeat rewrite nth_rcons in Hnth.
+  repeat rewrite size_rcons in Hnth.
+  replace ((size l).+3 - 2 < (size l).+2) with true in Hnth; last by lias.
+  replace ((size l).+3 - 2 < (size l).+1) with false in Hnth; last by lias.
+  replace (_ == _) with true in Hnth; last by lias.
+  subst.
+  repeat rewrite - cats1.
+  repeat rewrite -catA. simpl.
+  exists (l ++ [::x3; v; x1]).
+  split => //.
+  rewrite take_cat size_cat.
+  replace (_ < size l) with false; last by simpl; lias.
+  apply bet_weakening.
+  replace (_ + _ - _ - _) with 1; last by simpl; lias.
+  simpl.
+  repeat rewrite nth_rcons in H0.
+  repeat rewrite size_rcons in H0.
+  replace ((size l).+3 - 3 < (size l).+2) with true in H0; last by lias.
+  replace ((size l).+3 - 3 < (size l).+1) with true in H0; last by lias.
+  replace ((size l).+3 - 3 < (size l)) with false in H0; last by lias.
+  replace ((size l).+3 - 3 == (size l)) with true in H0; last by lias.
+  subst.
+  repeat rewrite - cats1 in if_expr0.
+  repeat rewrite - catA in if_expr0.
+  simpl in if_expr0.
+  unfold ct_suffix in if_expr0...
+  unfold to_ct_list in H1.
+  rewrite map_cat in H1...
+  rewrite drop_cat size_map in H1.
+  replace (_<_) with false in H1; last by lias.
+  replace (_+_-_-_) with 1 in H1; last by lias.
+  simpl in H1...
+  apply bet_select.
+Qed.
+
+(* XXX this does not hangs but is quite slow to extract *)
 Lemma type_update_select_agree_bet__1:
   forall C tm x1 x2 l x3,
   c_types_agree
@@ -1574,9 +1638,8 @@ Proof with auto_rewrite_cond.
         }
 
   (* admitting the second branch - now extraction works but takes a few seconds *)
-  - by apply type_update_select_agree_bet_ax_2.
+        (* - by apply type_update_select_agree_bet_ax_2. *)
 
-    (*
   - move: Hct.
     case/lastP : l => [|l x1] => //=.
     case/lastP : l => [|l x2] => //=.
@@ -1623,17 +1686,18 @@ Proof with auto_rewrite_cond.
     replace (_+_-_-_) with 1 in H1; last by lias.
     simpl in H1...
     apply bet_select.
-     *)
 Qed.
 
 End Host.
 
 Extraction Language OCaml.
 Extraction type_update_select_agree_bet__1.
+Extraction type_update_select_agree_bet__2.
 Extraction type_update_select_agree_bet.
 
 Extraction Language Haskell.
 (* Extraction type_update_select_agree_bet__1. XXX slow *)
+Extraction type_update_select_agree_bet__2.
 Extraction type_update_select_agree_bet.
 
 Lemma tc_to_bet_br: forall cts l,
