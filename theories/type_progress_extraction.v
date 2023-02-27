@@ -18,24 +18,28 @@ Definition t_preservation := t_preservation.
 
 Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
 
-Definition add_236_bis : seq basic_instruction := [::
-  BI_const (i32_of_Z (2)%Z);
-  BI_const (i32_of_Z (3)%Z);
-  BI_const (i32_of_Z (6)%Z);
-  BI_binop T_i32 (Binop_i BOI_add);
-  BI_binop T_i32 (Binop_i BOI_add)
-  ].
+Definition factorial_bis fact : seq basic_instruction :=
+  [::(BI_get_local 0);
+       (BI_const (i32_of_Z (1)%Z));
+       (BI_relop T_i32 (Relop_i (ROI_le SX_U)));
+       (BI_if (Tf [::] [::T_i32])
+          [::BI_const (i32_of_Z (1)%Z)]
 
-Definition add_236 : seq administrative_instruction := map AI_basic add_236_bis.
+          [::BI_get_local 0;
+           BI_const (i32_of_Z (1)%Z);
+           BI_binop T_i32 (Binop_i BOI_sub);
+           BI_const (i32_of_Z (0)%Z);
+           BI_call_indirect fact;
+           BI_get_local 0;
+           BI_binop T_i32 (Binop_i BOI_mul)])].
+
+Definition factorial fact : seq administrative_instruction :=
+  to_e_list (factorial_bis fact).
+
+Let factorial_t := (Tf [:: T_i32] [:: T_i32]).
 
 Let store_record := store_record host_function.
-
-Let emp_store_record : store_record := {|
-  s_funcs   := [::];
-  s_tables  := [::];
-  s_mems    := [::];
-  s_globals := [::];
-|}.
+Let function_closure := function_closure host_function.
 
 Let emp_instance : instance := {|
   inst_types  := [::];
@@ -45,14 +49,24 @@ Let emp_instance : instance := {|
   inst_globs  := [::];
 |}.
 
+Let factorial_closure : function_closure
+  := FC_func_native emp_instance factorial_t [::] (factorial_bis 0).
+
+Let emp_store_record : store_record := {|
+  s_funcs   := [:: factorial_closure];
+  s_tables  := [::];
+  s_mems    := [::];
+  s_globals := [::];
+|}.
+
 Let emp_frame : frame := {|
   f_locs := [::];
   f_inst := emp_instance;
 |}.
 
 Let emp_context : t_context := {|
-  tc_types_t := [::];
-  tc_func_t  := [::];
+  tc_types_t := [:: factorial_t];
+  tc_func_t  := [:: factorial_t];
   tc_global  := [::];
   tc_table   := [::];
   tc_memory  := [::];
@@ -61,7 +75,12 @@ Let emp_context : t_context := {|
   tc_return  := None;
 |}.
 
-Theorem H_be_typing_add_236 : be_typing emp_context add_236_bis (Tf [::] [:: T_i32]).
+Compute (b_e_type_checker emp_context (factorial_bis 0)).
+
+Check b_e_type_checker.
+
+Theorem H_be_typing_add_236 :
+  be_typing emp_context (factorial_bis 7) factorial_t.
 Proof. apply typing_if_type_checker => /=. reflexivity. Qed.
 
 Theorem H_config_typing_add_236 : config_typing emp_store_record emp_frame add_236 [:: T_i32].
