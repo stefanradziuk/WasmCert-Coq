@@ -945,24 +945,6 @@ Proof.
       * right. move=> [lf [E' _]]. inversion E' as [Heqaa']. destruct E. auto.
 Defined.
 
-Lemma list_search_prefix_pickableT : forall A (P : seq A -> Type),
-  comparable A ->
-  (forall l, decidableT (P l)) ->
-  forall l l', pickableT (fun lf => (l' = l ++ lf) ** (P lf)).
-Proof.
-  move=> A + C + l. elim l.
-  - move=> P D l'. case (D l') => d.
-    + left. by exists l'.
-    + right. move=> [lf [E nd]]. by subst.
-  - move {l} => a l IH P D l'. case l'.
-    + right. by move => [lf [E _]].
-    + move {l'} => a' l'. case (C a a') => E.
-      * subst. case (IH _ D l').
-        -- move=> E. left. destruct E as (lf&E'&p). exists lf. by rewrite E'.
-        -- move=> nE. right. move=> [lf [E p]]. apply: nE. exists lf. by inversion E.
-      * right. move=> [lf [E' _]]. inversion E' as [Heqaa']. destruct E. auto.
-Defined.
-
 (* XXX unused?
 Lemma list_search_suffix_pickable : forall A (P : seq A -> Prop),
   comparable A ->
@@ -1056,8 +1038,7 @@ Defined.
 
 Lemma list_split_pickableT2 : forall A (P : seq A -> seq A -> Type),
   (forall l1 l2, decidableT (P l1 l2)) ->
-  (* TODO prod notation *)
-  forall l, pickableT2 (fun l1 l2 => prod (l = l1 ++ l2) (P l1 l2)).
+  forall l, pickableT2 (fun l1 l2 => (l = l1 ++ l2) ** (P l1 l2)).
 Proof.
   move=> A P D l. by apply: list_split_pickableT2_gen.
 Defined.

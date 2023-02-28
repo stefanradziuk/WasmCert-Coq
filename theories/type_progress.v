@@ -1582,5 +1582,3 @@ Fixpoint interpret_multi_step (fuel : nat) s f es ts hs (HType : config_typing s
      end.
 
 End Host.
-
-Recursive Extraction interpret_multi_step.

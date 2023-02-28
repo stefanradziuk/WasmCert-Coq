@@ -81,7 +81,7 @@ Definition fuel_100 : nat := 100.
 End ProgressExtract.
 
 Extraction Language OCaml.
-Recursive Extraction ProgressExtract DummyHost.
+Extraction "interpreter.ml" ProgressExtract DummyHost.
 
 (*
  * Depending on the GHC version, the extracted code may have to be patched.

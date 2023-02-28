@@ -244,19 +244,6 @@ Proof.
     exists a1. by exists a2.
 Defined.
 
-(* XXX unused? *)
-Lemma pickable2_convert_T : forall A1 A2 B1 B2 (P1 P2 : _ -> _ -> Type) (f : A1 * A2 -> B1 * B2),
-  (forall a1 a2, P1 a1 a2 -> let (b1, b2) := f (a1, a2) in P2 b1 b2) ->
-  (forall b1 b2, P2 b1 b2 -> {a1 & {a2 & P1 a1 a2}}) ->
-  pickableT2 P1 ->
-  pickableT2 P2.
-Proof.
-  move=> A1 A2 B1 B2 P1 P2 f E1 E2. case.
-  - move=> [[x1 x2] p]. left. exists (f (x1, x2)). by apply: E1.
-  - move=> N. right. move=> [x1 [x2 p]]. apply: N. move: (E2 _ _ p) => [a1 [a2 p']].
-    exists a1. by exists a2.
-Defined.
-
 Lemma pickable2_weaken : forall A1 A2 (P : A1 -> A2 -> Prop),
   pickable2 P ->
   pickable (fun a1 => exists a2, P a1 a2).
