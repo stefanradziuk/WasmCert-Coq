@@ -590,8 +590,7 @@ Definition store_typing (s : store_record) : Type :=
       (* TODO move ** notation into a file to make it available without
       * importing other things *)
     prod (common.TProp.Forall (cl_type_check_single s) fs)
-    (prod (List.Forall (tab_agree s) tclss)
-    (List.Forall mem_agree mss))
+    ((List.Forall (tab_agree s) tclss) /\ (List.Forall mem_agree mss))
   end.
 
 Inductive config_typing : store_record -> frame -> seq administrative_instruction -> seq value_type -> Type :=

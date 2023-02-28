@@ -1287,7 +1287,7 @@ Qed.
 
 Lemma type_update_type_agree: forall tm tn' tm' cts,
   c_types_agree (type_update cts (to_ct_list tn') (CT_type tm')) tm ->
-  {lp & (c_types_agree cts (lp ++ tn')) ** (tm = lp ++ tm')}.
+  {lp & (c_types_agree cts (lp ++ tn')) /\ (tm = lp ++ tm')}.
 Proof with auto_rewrite_cond.
   move => tm tn' tm' cts H.
   exists (take (size tm - size tm') tm).

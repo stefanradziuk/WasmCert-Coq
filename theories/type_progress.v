@@ -1013,8 +1013,8 @@ Lemma br_reduce_extract_vs: forall n k lh es s C ts ts2,
     lfilled n lh [::AI_basic (BI_br (n + k))] es ->
     e_typing s C es (Tf [::] ts2) ->
     List.nth_error (tc_label C) k = Some ts ->
-    {vs & {lh' & (const_list vs) **
-      (lfilled n lh' (vs ++ [::AI_basic (BI_br (n + k))]) es) **
+    {vs & {lh' & (const_list vs) /\
+      (lfilled n lh' (vs ++ [::AI_basic (BI_br (n + k))]) es) /\
       (length vs = length ts)}}.
 Proof.
   move => n k lh es s C ts ts2 HLF.
@@ -1069,8 +1069,8 @@ Lemma return_reduce_extract_vs: forall n lh es s C ts ts2,
     lfilled n lh [::AI_basic BI_return] es ->
     e_typing s C es (Tf [::] ts2) ->
     tc_return C = Some ts ->
-    {vs & {lh' & (const_list vs) **
-      (lfilled n lh' (vs ++ [::AI_basic BI_return]) es) **
+    {vs & {lh' & (const_list vs) /\
+      (lfilled n lh' (vs ++ [::AI_basic BI_return]) es) /\
       (length vs = length ts)}}.
 Proof.
   move => n lh es s C ts ts2 HLF.
@@ -1212,7 +1212,7 @@ Proof.
               store_typing s ->
               (forall n lh k, lfilled n lh [::AI_basic (BI_br k)] es -> k < n) ->
               (forall n, not_lf_return es n) ->
-              (const_list es) ** (length es = length ts) +
+              ((const_list es) /\ (length es = length ts)) +
               (es = [::AI_trap]) +
               {s' & {f' & {es' & {hs' & reduce hs s f es hs' s' f' es'}}}}); clear HType s C es tf.
   (* The previous variables s/C/es/tf still lingers here so we need to clear *)
@@ -1582,3 +1582,6 @@ Fixpoint interpret_multi_step (fuel : nat) s f es ts hs (HType : config_typing s
      end.
 
 End Host.
+
+Recursive Extraction list_search_split_pickable2.
+Recursive Extraction t_progress_e.
