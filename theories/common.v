@@ -930,7 +930,7 @@ Ltac rect'_build_option rect := rect'_build_projection option rect.
 Lemma list_search_prefix_pickable : forall A (P : seq A -> Prop),
   comparable A ->
   (forall l, decidable (P l)) ->
-  forall l l', pickable (fun lf => (l' = l ++ lf) /\ (P lf)).
+  forall l l', pickable (fun lf => l' = l ++ lf /\ P lf).
 Proof.
   move=> A + C + l. elim l.
   - move=> P D l'. case (D l') => d.

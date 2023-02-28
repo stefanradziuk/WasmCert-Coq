@@ -1013,9 +1013,9 @@ Lemma br_reduce_extract_vs: forall n k lh es s C ts ts2,
     lfilled n lh [::AI_basic (BI_br (n + k))] es ->
     e_typing s C es (Tf [::] ts2) ->
     List.nth_error (tc_label C) k = Some ts ->
-    {vs & {lh' & (const_list vs) /\
-      (lfilled n lh' (vs ++ [::AI_basic (BI_br (n + k))]) es) /\
-      (length vs = length ts)}}.
+    {vs & {lh' & const_list vs /\
+      lfilled n lh' (vs ++ [::AI_basic (BI_br (n + k))]) es /\
+      length vs = length ts}}.
 Proof.
   move => n k lh es s C ts ts2 HLF.
   apply lfilled_Ind_Equivalent in HLF.
@@ -1070,8 +1070,8 @@ Lemma return_reduce_extract_vs: forall n lh es s C ts ts2,
     e_typing s C es (Tf [::] ts2) ->
     tc_return C = Some ts ->
     {vs & {lh' & (const_list vs) /\
-      (lfilled n lh' (vs ++ [::AI_basic BI_return]) es) /\
-      (length vs = length ts)}}.
+      lfilled n lh' (vs ++ [::AI_basic BI_return]) es /\
+      length vs = length ts}}.
 Proof.
   move => n lh es s C ts ts2 HLF.
   apply lfilled_Ind_Equivalent in HLF.
@@ -1212,7 +1212,7 @@ Proof.
               store_typing s ->
               (forall n lh k, lfilled n lh [::AI_basic (BI_br k)] es -> k < n) ->
               (forall n, not_lf_return es n) ->
-              ((const_list es) /\ (length es = length ts)) +
+              (const_list es /\ length es = length ts) +
               (es = [::AI_trap]) +
               {s' & {f' & {es' & {hs' & reduce hs s f es hs' s' f' es'}}}}); clear HType s C es tf.
   (* The previous variables s/C/es/tf still lingers here so we need to clear *)

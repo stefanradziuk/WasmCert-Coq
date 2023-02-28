@@ -863,7 +863,7 @@ Proof.
   { by split; apply lfilled_Ind_Equivalent. }
   case lh.
   - move=> vsh esh.
-    have: pickable2 (fun vs es'' => (es' = vs ++ es ++ es'') /\ (const_list vs) /\ (vs = vsh /\ es'' = esh)).
+    have: pickable2 (fun vs es'' => es' = vs ++ es ++ es'' /\ const_list vs /\ vs = vsh /\ es'' = esh).
     {
       apply: list_search_split_pickable2.
       - by apply: administrative_instruction_eq_dec.
@@ -882,7 +882,7 @@ Lemma lfilled_pickable_base : forall es es',
 Proof.
   move=> es es'. apply: (@pickableT_equiv _ (fun lh => lfilledInd 0 lh es es')).
   { move=> lh. by split; apply lfilled_Ind_Equivalent. }
-  have: pickable2 (fun vs es'' => (es' = vs ++ es ++ es'') /\ (const_list vs) /\ True).
+  have: pickable2 (fun vs es'' => es' = vs ++ es ++ es'' /\ const_list vs /\ True).
   {
     apply: list_search_split_pickable2.
     - by apply: administrative_instruction_eq_dec.

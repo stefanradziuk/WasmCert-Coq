@@ -317,7 +317,7 @@ Definition module_func_typing (c : t_context) (m : module_func) (tf : function_t
     tc_label := tm :: c.(tc_label);
     tc_return := Some tm;
   |} in
-  prod ((i < List.length c.(tc_types_t)) /\
+  prod (i < List.length c.(tc_types_t) /\
   (List.nth i c.(tc_types_t) (Tf nil nil) == tf))
   (typing.be_typing c' b_es (Tf [::] tm)).
 
