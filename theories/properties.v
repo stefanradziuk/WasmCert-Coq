@@ -863,16 +863,16 @@ Proof.
   { by split; apply lfilled_Ind_Equivalent. }
   case lh.
   - move=> vsh esh.
-    have: pickableT2 (fun vs es'' => (es' = vs ++ es ++ es'') /\ (const_list vs) /\ (vs = vsh /\ es'' = esh)).
+    have: pickable2 (fun vs es'' => (es' = vs ++ es ++ es'') /\ (const_list vs) /\ (vs = vsh /\ es'' = esh)).
     {
-      apply: list_search_split_pickableT2.
+      apply: list_search_split_pickable2.
       - by apply: administrative_instruction_eq_dec.
       - move=> ? ?.
-        apply decidable_decidableT; repeat apply decidable_and; apply eq_comparable.
+        repeat apply decidable_and; apply eq_comparable.
     }
     case.
     + move=> [[vs es''] [E [C [E1 E2]]]]. left. subst. by constructor.
-    + move=> nE. right. move=> I. apply: nE. inversion I. subst. by repeat eexists.
+    + move=> nE. right. move=> I. exfalso. apply: nE. inversion I. subst. by repeat eexists.
   - move=> vs n es'' lh' es'''. right. move=> I. by inversion I.
 Defined.
 
@@ -882,17 +882,17 @@ Lemma lfilled_pickable_base : forall es es',
 Proof.
   move=> es es'. apply: (@pickableT_equiv _ (fun lh => lfilledInd 0 lh es es')).
   { move=> lh. by split; apply lfilled_Ind_Equivalent. }
-  have: pickableT2 (fun vs es'' => (es' = vs ++ es ++ es'') /\ (const_list vs) /\ True).
+  have: pickable2 (fun vs es'' => (es' = vs ++ es ++ es'') /\ (const_list vs) /\ True).
   {
     apply: list_search_split_pickable2.
     - by apply: administrative_instruction_eq_dec.
-    - move=> ? ?. apply decidable_decidableT. apply decidable_and.
+    - move=> ? ?. apply decidable_and.
       + by apply: is_true_decidable.
       + by left.
   }
   case.
   - move=> [[vs es''] [E [C _]]]. left. eexists. subst. by constructor.
-  - move=> nE. right. move=> [lh I]. apply: nE. inversion I. subst. by repeat eexists.
+  - move=> nE. right. move=> [lh I]. exfalso. apply: nE. inversion I. subst. by repeat eexists.
 Defined.
 
 (** A helper definition for the decidability of [br_reduce] and [return_reduce]
