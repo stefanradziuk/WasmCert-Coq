@@ -1018,10 +1018,7 @@ Proof.
   + by destruct es1 => //=.
   + apply concat_cancel_last in H1. destruct H1. subst.
     by exists [::], t1s0, t2s0, t2s.
-  + (* XXX is this the bet_weakening case?
-     * is this the only case where ts != []?
-     * could it still work with ts = []? *)
-    edestruct IHHType as [ts' [t1s' [t2s' [t3s' H]]]]; eauto.
+  + edestruct IHHType as [ts' [t1s' [t2s' [t3s' H]]]]; eauto.
     destruct H as [->[->[??]]]. 
     exists (ts ++ ts'), t1s', t2s', t3s'.
     by repeat split => //=; rewrite -catA.
@@ -1044,49 +1041,6 @@ Proof.
     exists (ts ++ t3s').
     repeat split; apply bet_weakening with (ts := ts) => //.
 Qed.
-
-Let C_emp := Build_t_context [::] [::] [::] [::] [::] [::] [::] None.
-Let i_add := BI_binop T_i32 (Binop_i BOI_add).
-Let t_ii_to_i := Tf [:: T_i32; T_i32] [:: T_i32].
-Let i_add_typing : be_typing C_emp [:: i_add] t_ii_to_i.
-Proof. apply bet_binop. apply Binop_i32_agree. Qed.
-
-Let t_iii_to_i := Tf [:: T_i32; T_i32; T_i32] [:: T_i32].
-Let seq_2_i_add_typing : be_typing C_emp ([:: i_add] ++ [:: i_add]) t_iii_to_i.
-Proof.
-  apply bet_composition with (t2s := [:: T_i32; T_i32]).
-  - apply bet_weakening with (ts := [:: T_i32]).
-    by apply i_add_typing.
-  - by apply i_add_typing.
-Qed.
-(* proof sketch of the above:
- *
- * (1): i_add : ii->i, so by weakening (ts := i) we have i_add : iii->ii
- *
- * (2): i_add : ii->i
- *
- * to show that [i_add; i_add] : iii->i:
- *   it's a composition of instrs of types iii->ii and ii->i (by 1,2)
- *)
-
-Let t_iiiii_to_iii := Tf [:: T_i32; T_i32; T_i32; T_i32; T_i32] [:: T_i32; T_i32; T_i32].
-Let seq_2_i_add_typing' : be_typing C_emp ([:: i_add] ++ [:: i_add]) t_iiiii_to_iii.
-Proof.
-  apply bet_weakening with (ts := [:: T_i32; T_i32]).
-  apply seq_2_i_add_typing.
-Qed.
-
-Definition ts := match composition_typing_single seq_2_i_add_typing with
-                 | existT ts (existT t1s' (existT t2s' (existT t3s _))) =>
-                     (ts, t1s', t2s', t3s)
-                 end.
-(* ([], [i,i,i], [i], [i,i]) *)
-
-Definition ts' := match composition_typing_single seq_2_i_add_typing' with
-                  | existT ts (existT t1s' (existT t2s' (existT t3s _))) =>
-                      (ts, t1s', t2s', t3s)
-                  end.
-(* ([i,i], [i,i,i], [i], [i,i]) *)
 
 Lemma composition_typing: forall C es1 es2 t1s t2s,
     be_typing C (es1 ++ es2) (Tf t1s t2s) ->
