@@ -1,0 +1,2 @@
+type_progress_extraction.vo type_progress_extraction.glob type_progress_extraction.v.beautified type_progress_extraction.required_vo: type_progress_extraction.v ./type_progress.vo ./type_preservation.vo ./type_checker.vo ./type_checker_reflects_typing.vo
+type_progress_extraction.vio: type_progress_extraction.v ./type_progress.vio ./type_preservation.vio ./type_checker.vio ./type_checker_reflects_typing.vio

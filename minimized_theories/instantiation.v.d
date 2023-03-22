@@ -1,0 +1,2 @@
+instantiation.vo instantiation.glob instantiation.v.beautified instantiation.required_vo: instantiation.v ./list_extra.vo ./datatypes.vo ./datatypes_properties.vo ./interpreter.vo ./binary_format_parser.vo ./operations.vo ./typing.vo ./opsem.vo ./type_checker.vo ./memory.vo ./memory_list.vo
+instantiation.vio: instantiation.v ./list_extra.vio ./datatypes.vio ./datatypes_properties.vio ./interpreter.vio ./binary_format_parser.vio ./operations.vio ./typing.vio ./opsem.vio ./type_checker.vio ./memory.vio ./memory_list.vio

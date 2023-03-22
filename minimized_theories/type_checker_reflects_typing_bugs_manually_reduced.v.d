@@ -1,0 +1,2 @@
+type_checker_reflects_typing_bugs_manually_reduced.vo type_checker_reflects_typing_bugs_manually_reduced.glob type_checker_reflects_typing_bugs_manually_reduced.v.beautified type_checker_reflects_typing_bugs_manually_reduced.required_vo: type_checker_reflects_typing_bugs_manually_reduced.v ./common.vo ./operations.vo ./typing.vo ./type_checker.vo ./properties.vo
+type_checker_reflects_typing_bugs_manually_reduced.vio: type_checker_reflects_typing_bugs_manually_reduced.v ./common.vio ./operations.vio ./typing.vio ./type_checker.vio ./properties.vio

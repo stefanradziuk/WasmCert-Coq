@@ -1,0 +1,2 @@
+binary_format_spec.vo binary_format_spec.glob binary_format_spec.v.beautified binary_format_spec.required_vo: binary_format_spec.v ./datatypes_properties.vo ./binary_parser_types.vo ./binary_format_parser.vo ./binary_format_printer.vo ./leb128.vo
+binary_format_spec.vio: binary_format_spec.v ./datatypes_properties.vio ./binary_parser_types.vio ./binary_format_parser.vio ./binary_format_printer.vio ./leb128.vio

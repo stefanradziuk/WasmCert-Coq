@@ -732,8 +732,8 @@ Qed.
 End Host.
 
 Extraction Language Haskell.
-Time Timeout 7 Recursive Extraction lemma_1_using_aux.
-(* Finished transaction in 0.175 secs (0.175u,0.s) (successful) *)
-Time Timeout 7 Recursive Extraction lemma_1.
+(* Time Recursive Extraction lemma_1. *)
 (* Finished transaction in 9.562 secs (9.564u,0.s) (successful) *)
+Time Recursive Extraction lemma_1_using_aux.
+(* Finished transaction in 0.175 secs (0.175u,0.s) (successful) *)
 
