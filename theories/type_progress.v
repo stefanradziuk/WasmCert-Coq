@@ -1581,4 +1581,59 @@ Fixpoint interpret_multi_step (fuel : nat) s f es ts hs (HType : config_typing s
                   end
      end.
 
+
+(* try alt. setup with typing and reduce in Prop *)
+Inductive config_typing' :
+  store_record -> frame -> seq administrative_instruction -> seq value_type ->
+  Prop :=.
+
+Inductive reduce' :
+  host_state -> store_record -> frame -> seq administrative_instruction ->
+  host_state -> store_record -> frame -> seq administrative_instruction ->
+  Prop :=.
+
+Definition terminal_form' (es: seq administrative_instruction) : Prop.
+Admitted.
+
+(* Notice Htype is in Prop so it cannot be used to construct s'/f'/es'/hs'
+ * but can be used for proving (reduce' hs s f es hs' s' f' es').
+ * I think this proof of progress might be significantly different
+ * (and likely quite similar to the certified interpreter implementation)
+ *)
+Theorem t_progress' s f es ts hs (Htype : config_typing' s f es ts) :
+  terminal_form' es +
+  {s' : store_record &
+    {f' : frame &
+      {es' : seq administrative_instruction &
+        {hs' : host_state & reduce' hs s f es hs' s' f' es'}}}}.
+Proof. Admitted.
+
+Theorem t_preservation' : forall s f es s' f' es' ts hs hs',
+  reduce' hs s f es hs' s' f' es' ->
+  config_typing' s f es ts ->
+  config_typing' s' f' es' ts.
+Proof. Admitted.
+
+Definition interpret_one_step' s f es ts hs (H_config_typing : config_typing' s f es ts) : seq administrative_instruction
+  := match t_progress' hs H_config_typing with
+     | inl _ => es (* terminal form case *)
+     | inr (existT _ (existT _ (existT es' _))) => es'
+     end.
+
+Fixpoint interpret_multi_step' (fuel : nat) s f es ts hs (HType : config_typing' s f es ts) : seq administrative_instruction
+  := match fuel with
+     | O => es                       (* ran out of fuel *)
+     | S fuel' => match t_progress' hs HType with
+                  | inl _ => es      (* es is already in terminal form *)
+                  | inr (existT _ (existT _ (existT _ (existT hs' HReduce)))) =>
+                      let HType' := t_preservation' HReduce HType in
+                      interpret_multi_step' fuel' hs' HType'
+                  end
+     end.
+
 End Host.
+
+From Coq Require Import Extraction.
+Extraction Language Haskell.
+Extraction interpret_multi_step.
+Extraction interpret_multi_step'.
