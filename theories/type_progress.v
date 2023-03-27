@@ -1585,12 +1585,22 @@ Fixpoint interpret_multi_step (fuel : nat) s f es ts hs (HType : config_typing s
 (* try alt. setup with typing and reduce in Prop *)
 Inductive config_typing' :
   store_record -> frame -> seq administrative_instruction -> seq value_type ->
-  Prop :=.
+  Prop :=
+| mk_config_typing' :
+  forall s f es ts,
+  store_typing s ->
+  s_typing s None f es ts ->
+  config_typing' s f es ts.
 
 Inductive reduce' :
   host_state -> store_record -> frame -> seq administrative_instruction ->
   host_state -> store_record -> frame -> seq administrative_instruction ->
-  Prop :=.
+  Prop :=
+  | r_simple' :
+      forall e e' s f hs,
+        reduce_simple e e' ->
+        reduce' hs s f e hs s f e'
+        .
 
 Definition terminal_form' (es: seq administrative_instruction) : Prop.
 Admitted.
@@ -1636,4 +1646,9 @@ End Host.
 From Coq Require Import Extraction.
 Extraction Language Haskell.
 Extraction interpret_multi_step.
+(* interpret_multi_step host_function host_instance fuel s f es ts hs hType
+ *   = ... *)
 Extraction interpret_multi_step'.
+(* interpret_multi_step' host_function host_instance fuel s f es ts hs
+ *   = ...
+ * NOTE: no hType! *)
