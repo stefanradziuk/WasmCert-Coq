@@ -1263,23 +1263,32 @@ Definition progress
   (Htype : config_typing s f es ts) :
   {hs' & {s' & {f' & {es' | reduce hs s f es hs' s' f' es'}}}}.
 Proof.
-  destruct (run_step_with_fuel 100 100 (hs, s, f, es)) as [[[hs' s'] f'] res].
+  remember (run_step 100 (hs, s, f, es)) as run_step_res.
+  destruct run_step_res as [[[hs' s'] f'] res].
   exists hs', s', f'.
   destruct res as [ | | vs | es'].
   - (* RS_crash *)
     (* XXX abusing AI_trap *)
     exists [:: AI_trap].
+    (* TODO exfalso using Htype *)
+    (* XXX what about C_exhaustion? *)
     give_up.
+
   - (* RS_break *)
     (* XXX what does RS_break mean? *)
     exists [:: AI_trap].
     give_up.
+
   - (* RS_return *)
-    exists (map AI_basic (map BI_const vs)).
+    exists (v_to_e_list vs).
+    (* TODO prove using rs_return_wellfounded *)
     give_up.
+
   - (* RS_normal *)
     exists es'.
-    give_up.
+    apply run_step_soundness with (d := 100).
+    rewrite Heqrun_step_res.
+    reflexivity.
 Admitted.
 
 (* TODO I'd like a less verbose version using config_tuple, but I got stuck
