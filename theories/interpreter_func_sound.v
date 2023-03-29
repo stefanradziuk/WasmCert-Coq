@@ -1246,4 +1246,61 @@ Proof.
   move=> d hs s f es hs' s' f' es'. by apply: run_step_soundness_aux.
 Qed.
 
+(* XXX should be doing this in a separate file but I couldn't figure out the
+ * implicit arguments for run_step_with_fuel *)
+
+Check run_step_with_fuel.
+Print config_tuple.
+
+(* TODO this assumes we always produce an es'
+ * this is not quite what happens with res_step but we can fake it for now *)
+Definition progress
+  (hs : host_state)
+  (s : store_record)
+  (f : frame)
+  (es : seq administrative_instruction)
+  (ts : seq value_type)
+  (Htype : config_typing s f es ts) :
+  {hs' & {s' & {f' & {es' | reduce hs s f es hs' s' f' es'}}}}.
+Proof.
+  destruct (run_step_with_fuel 100 100 (hs, s, f, es)) as [[[hs' s'] f'] res].
+  exists hs', s', f'.
+  destruct res as [ | | vs | es'].
+  - (* RS_crash *)
+    (* XXX abusing AI_trap *)
+    exists [:: AI_trap].
+    give_up.
+  - (* RS_break *)
+    (* XXX what does RS_break mean? *)
+    exists [:: AI_trap].
+    give_up.
+  - (* RS_return *)
+    exists (map AI_basic (map BI_const vs)).
+    give_up.
+  - (* RS_normal *)
+    exists es'.
+    give_up.
+Admitted.
+
+(* TODO I'd like a less verbose version using config_tuple, but I got stuck
+ * below trying to pattern match on config_tuple *)
+(* Definition config_tuple :=
+ * ((host_state * store_record * frame * list administrative_instruction)%type). *)
+(* Definition res_tuple :=
+ * (host_state * store_record * frame * res_step)%type. *)
+
+Definition tuple_eq (xy : (nat * nat)%type) : Prop :=
+  match xy with
+  | (x, y) => x = y
+  end.
+Theorem tuple_eq_7 : tuple_eq (7, 7). Proof. reflexivity. Qed.
+
+Fail Definition config_tuple_typing (cfg : config_tuple) : Prop :=
+  match cfg with
+  | (s, f, es, ts) => config_typing s f es ts
+  end.
+(* The term "s" has type "Equality.sort host_state"
+ * while it is expected to have type "datatypes.store_record ?host_function". *)
+
+
 End Host.
