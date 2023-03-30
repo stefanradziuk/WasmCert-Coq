@@ -1298,18 +1298,20 @@ Admitted.
 (* Definition res_tuple :=
  * (host_state * store_record * frame * res_step)%type. *)
 
-Definition tuple_eq (xy : (nat * nat)%type) : Prop :=
-  match xy with
-  | (x, y) => x = y
+Definition tuple_eq (xyz : (nat * nat * nat)%type) : Prop :=
+  match xyz with
+  | (x, y, z) => x = y /\ y = z
   end.
-Theorem tuple_eq_7 : tuple_eq (7, 7). Proof. reflexivity. Qed.
+Theorem tuple_eq_7 : tuple_eq (7, 7, 7). Proof. split; reflexivity. Qed.
 
-Fail Definition config_tuple_typing (cfg : config_tuple) : Prop :=
+Let config_tuple := config_tuple host_function.
+
+Definition config_tuple_typing (cfg : config_tuple) (ts : seq value_type) : Prop :=
   match cfg with
-  | (s, f, es, ts) => config_typing s f es ts
+  | (hs, s, f, es) => config_typing s f es ts
   end.
-(* The term "s" has type "Equality.sort host_state"
- * while it is expected to have type "datatypes.store_record ?host_function". *)
+(* Found a constructor of inductive type prod
+ * while a constructor of datatypes.store_record is expected. *)
 
 
 End Host.
