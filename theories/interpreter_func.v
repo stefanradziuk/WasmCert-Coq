@@ -97,13 +97,13 @@ Inductive res_step'_separate_e
     res_step'_separate_e hs s f ves e
 
 | RS''_break k ves' :
-    forall n lh es vs0 ces,
+    (forall n lh es vs0 ces,
       lfilled k lh (vs0 ++ [::AI_basic (BI_br k)]) es ->
       v_to_e_list ves' = rev vs0 ->
       reduce
         hs s f [::AI_label n ces es]
-        hs s f (drop (size vs0 - n) vs0 ++ ces) ->
-      res_step'_separate_e hs s f ves e
+        hs s f (drop (size vs0 - n) vs0 ++ ces)) ->
+    res_step'_separate_e hs s f ves e
 
 | RS''_return (ves' : list value) : False -> res_step'_separate_e hs s f ves e
 (* TODO RS''_return needs a proof *)
@@ -519,17 +519,109 @@ Proof.
   by cats1_last_eq Ht1s.
 Qed.
 
-Lemma break_br : forall j ves,
-  exists k m vs0 lh es,
-    k + j = m /\
-    lfilled k lh (vs0 ++ [:: AI_basic (BI_br m)]) es /\
-    v_to_e_list ves = rev vs0.
+(* | rs_br : *)
+(*     forall n vs es i LI lh, *)
+(*       const_list vs -> *)
+(*       length vs = n -> *)
+(*       lfilled i lh (vs ++ [::AI_basic (BI_br i)]) LI -> *)
+(*       reduce_simple [::AI_label n es LI] (vs ++ es) *)
+
+Lemma lfilled_es_es : forall i es, exists lh,
+  lfilledInd i lh es es.
 Proof.
-  intros j ves.
-  exists 0, j, (rev (v_to_e_list ves)).
-  exists ((LH_base (vs_to_es ves) [::])).
-  eexists.
-  repeat split; try by solve_lfilled_0.
+  intros i es. generalize dependent es. induction i.
+  - intros es. exists (LH_base [::] [::]).
+    replace es with ([::] ++ es ++ [::]) at 2; last by apply cats0.
+    by apply LfilledBase.
+  - intros es.
+    Print LH_rec.
+    Print LfilledRec.
+    (* exists (LH_rec ...). *)
+    (* notice this is false, because when applying LfilledRec, es gets wrapped in AI_label *)
+Admitted.
+
+(* basically just repeating rs_br *)
+Lemma reduce_label_break : forall (hs : host_state) s f vs es n i LI lh,
+  const_list vs ->
+  length vs = n ->
+  lfilled i lh (vs ++ [::AI_basic (BI_br i)]) LI ->
+  reduce
+    hs s f [:: AI_label n es LI]
+    hs s f (vs ++ es).
+Proof.
+  intros hs s f vs es n i LI lh Hconst Hlen HLF.
+  apply r_simple. by apply rs_br with (lh := lh) (i := i).
+Qed.
+
+  (* run_step_with_fuel fuel d (hs, s, f, es') = *)
+  (* (hs', s', f', RS_break 0 es'') -> *)
+  (* n <= size es'' -> *)
+
+Lemma break_0 : forall (hs : host_state) s f lh es es' es'' n,
+  (* rev es''? *)
+  (* vs_to_es? *)
+  lfilled 0 lh ((v_to_e_list (rev es'')) ++ [::AI_basic (BI_br 0)]) es ->
+  n <= size es'' ->
+  reduce
+    hs s f ([:: AI_label n es es'])
+    hs s f (v_to_e_list (rev (take n es'')) ++ es).
+Proof.
+  intros hs s f lh es es' es'' n HLF Hn.
+  apply reduce_label_break with (i := 0) (lh := lh).
+  - apply v_to_e_is_const_list.
+  - rewrite length_is_size.
+    rewrite v_to_e_size.
+    rewrite size_rev.
+    rewrite size_take.
+    destruct (n < size es'') eqn:? => //.
+    by replace n with (size es''); lias.
+  - (* TODO mismatch: take n missing in HLF *)
+    admit.
+Admitted.
+
+(* | RS''_break k ves' : *)
+(*     (forall n lh es vs0 ces, *)
+(*       lfilled k lh (vs0 ++ [::AI_basic (BI_br k)]) es -> *)
+(*       v_to_e_list ves' = rev vs0 -> *)
+(*       reduce *)
+(*         hs s f [::AI_label n ces es] *)
+(*         hs s f (drop (size vs0 - n) vs0 ++ ces)) -> *)
+(*     res_step'_separate_e hs s f ves e *)
+
+Lemma break_br : forall (hs : host_state) s f j ves n lh (es vs0 ces : seq administrative_instruction),
+  n <= size vs0 ->
+  lfilled j lh (vs0 ++ [:: AI_basic (BI_br j)]) es ->
+  (* equivalent to (vs_to_es ves = vs0)?
+   * v_to_e_list ves = rev vs0 -> *)
+  v_to_e_list ves = rev vs0 ->
+  reduce
+    hs s f [:: AI_label n ces es]
+    hs s f (drop (size vs0 - n) vs0 ++ ces).
+Proof.
+  intros hs s f j ves n lh es vs0 ces ? HLF Hves.
+
+
+  (* simplify vs0 *)
+  (* apply f_equal with (f := rev) in Hves. rewrite revK in Hves. subst vs0. *)
+
+  Search drop.
+  remember (size vs0 - n) as n' eqn:?.
+
+  eapply r_label with (k := j) (lh := lh).
+  - apply r_simple.
+    apply rs_br with
+      (i := j) (lh := lh)
+      (vs := drop n' vs0)
+      (* (vs := vs0) *)
+      (es := ces) (LI := es) => //.
+    * admit.
+    (* * assert (Hconst : const_list vs0). { admit. } *)
+    (*   rewrite <- (cat_take_drop n' vs0) in Hconst. *)
+    (*   by apply (const_list_split) in Hconst as [_?]. *)
+    * Search lfilled.
+  - apply/lfilledP.
+    Print lfilledInd.
+
 Qed.
 
 Lemma reduce_br_if_true : forall (hs : host_state) s f c ves' j,
@@ -1680,7 +1772,7 @@ Proof.
         by eapply reduce_if_true.
 
     * (* AI_basic (BI_br j) *)
-      (* apply break(j, ves'). *)
+      apply break(j, ves).
       by apply admitted_TODO.
 
     * (* AI_basic (BI_br_if j) *)
