@@ -1793,36 +1793,28 @@ Lemma error_label_rec : forall s f es ves ln les,
       inst_typing s (f_inst f) C' /\
       store_typing s /\
       e_typing s C es (Tf [::] ts))) ->
-  (forall ret lab, ~ (exists C C' t1s t2s t1s',
-      C = upd_label (upd_local_return C' (map typeof f.(f_locs)) ret) lab /\
+  ~ (exists C t1s t2s t1s',
       rev [seq typeof i | i <- ves] = t1s' ++ t1s /\
-      inst_typing s (f_inst f) C' /\
+      inst_typing s (f_inst f) C /\
       store_typing s /\
-      e_typing s C [:: AI_label ln les es] (Tf t1s t2s))).
+      e_typing s C [:: AI_label ln les es] (Tf t1s t2s)).
 Proof.
-  intros s f es ves ln les H ret lab [C [C' [t1s [t2s [ts [? [? [Hinst [? Hetype]]]]]]]]].
+  intros s f es ves ln les H [C [t1s [t2s [ts [? [Hinst [? Hetype]]]]]]].
   apply Label_typing in Hetype as [t1s' [t2s' [? [? [??]]]]].
   (* XXX should `lab` be prepended here ? *)
-  remember (lab ++ [:: t1s'] ++ tc_label C) as lab' eqn:?.
-  remember (upd_label C lab') as C'' eqn:HeqC''.
-  apply H with (ret := ret) (lab := lab').
-  exists C'', C', t2s'.
+  remember ([:: t1s'] ++ tc_label C) as lab eqn:?.
+  remember (upd_label C lab) as C' eqn:HeqC'.
+  apply H with (ret := tc_return C) (lab := lab).
+  exists C', C, t2s'.
   repeat split => //.
+  rewrite HeqC'.
+  f_equal.
+  unfold upd_local_return.
+  destruct C eqn:?; simpl.
 
-  {
-    assert (Hupd :
-        upd_label (upd_label (upd_local_return C' (map typeof f.(f_locs)) ret) lab) lab'
-        = upd_label (upd_local_return C' (map typeof f.(f_locs)) ret) lab').
-    admit. (* XXX this is probably wrong *)
-
-    rewrite HeqC''. subst C. by rewrite Hupd.
-  }
-
-  {(* e_typing s C'' es (Tf [::] t2s') *)
-    subst C''.
-    subst lab'.
-    admit.
-  }
+  (* f.(f_locs) is getting in the way here *)
+  assert (Hloc : map typeof f.(f_locs) = tc_local). admit.
+  by rewrite Hloc.
 Admitted.
 
 Lemma reduce_label_rec : forall (hs hs' : host_state) s s' f f' es es' ves ln les,
