@@ -45,9 +45,6 @@ Hypothesis host_application_impl_correct :
 (* Let run_v {eff' eff'_has_host_event} := *)
 (*   @interpreter.run_v _ executable_host_instance eff' eff'_has_host_event. *)
 
-(* XXX still needs
-   (host.host_state host_instance),
-   (datatypes.store_record host_function) *)
 Let run_v :=
   @interpreter_func.run_v
     _ host_instance host_application_impl host_application_impl_correct.
@@ -787,22 +784,8 @@ Definition external_type_checker (s : store_record) (v : v_ext) (e : extern_t) :
   | (_, _) => false
   end.
 
-Check run_v.
-
-(* TODO fix actual run_v,
- * missing "Equality.sort (host.host_state host_instance)". *)
-Hypothesis run_v_mock
-     : datatypes.store_record host_function ->
-       frame ->
-       seq administrative_instruction ->
-       fuel ->
-       interpreter_func.depth ->
-       host.host_state host_instance * datatypes.store_record host_function *
-       res.
-Search frame.
-
-Definition interp_get_v (s : store_record) (inst : instance) (b_es : list basic_instruction) : option value (* TODO: isa mismatch *) :=
-  match run_v_mock s (Build_frame [::] inst) (operations.to_e_list b_es) 2 0 with
+Definition interp_get_v (hs : host_state) (s : store_record) (inst : instance) (b_es : list basic_instruction) : option value (* TODO: isa mismatch *) :=
+  match run_v hs s (Build_frame [::] inst) (operations.to_e_list b_es) 2 0 with
   | (_, interpreter_func.R_value vs) =>
     match vs with
     | [:: v] => Some v
@@ -811,13 +794,13 @@ Definition interp_get_v (s : store_record) (inst : instance) (b_es : list basic_
   | _ => None
   end.
 
-Definition interp_get_i32 (s : store_record) (inst : instance) (b_es : list basic_instruction) : option i32 (* TODO: isa mismatch *) :=
-  match interp_get_v s inst b_es with
+Definition interp_get_i32 (hs : host_state) (s : store_record) (inst : instance) (b_es : list basic_instruction) : option i32 (* TODO: isa mismatch *) :=
+  match interp_get_v hs s inst b_es with
   | Some (VAL_int32 c) => Some c
   | _ => None
   end.
 
-Definition interp_instantiate (s : store_record) (m : module) (v_imps : list v_ext) : option ((store_record * instance * list module_export) * option nat) :=
+Definition interp_instantiate (hs : host_state) (s : store_record) (m : module) (v_imps : list v_ext) : option ((store_record * instance * list module_export) * option nat) :=
   match module_type_checker m with
   | None => None
   | Some (t_imps, t_exps) =>
@@ -830,16 +813,16 @@ Definition interp_instantiate (s : store_record) (m : module) (v_imps : list v_e
           inst_memory := nil;
           inst_globs := List.map (fun '(Mk_globalidx i) => i) (ext_globs v_imps);
         |} in
-        those (map (fun g => interp_get_v s c g.(modglob_init)) m.(mod_globals)) in
+        those (map (fun g => interp_get_v hs s c g.(modglob_init)) m.(mod_globals)) in
       match g_inits_opt with
       | None => None
       | Some g_inits =>
         let '(s', inst, v_exps) := interp_alloc_module s m v_imps g_inits in
-        let e_offs_opt := those (map (fun e => interp_get_i32 s' inst e.(modelem_offset)) m.(mod_elem)) in
+        let e_offs_opt := those (map (fun e => interp_get_i32 hs s' inst e.(modelem_offset)) m.(mod_elem)) in
         match e_offs_opt with
         | None => None
         | Some e_offs =>
-          let d_offs_opt := those (map (fun d => interp_get_i32 s' inst d.(moddata_offset)) m.(mod_data)) in
+          let d_offs_opt := those (map (fun d => interp_get_i32 hs s' inst d.(moddata_offset)) m.(mod_data)) in
           match d_offs_opt with
           | None => None
           | Some d_offs =>
@@ -857,8 +840,8 @@ Definition interp_instantiate (s : store_record) (m : module) (v_imps : list v_e
   end.
 
 Lemma interp_instantiate_imp_instantiate :
-  forall s m v_imps s_end inst v_exps start,
-  interp_instantiate s m v_imps = Some ((s_end, inst, v_exps), start) ->
+  forall hs s m v_imps s_end inst v_exps start,
+  interp_instantiate hs s m v_imps = Some ((s_end, inst, v_exps), start) ->
   instantiate s m v_imps ((s_end, inst, v_exps), start).
 Proof.
 Admitted. (* TODO *)
@@ -870,8 +853,8 @@ Definition empty_store_record : store_record := {|
     s_globals := nil;
   |}.
 
-Definition interp_instantiate_wrapper (m : module) : option ((store_record * instance * list module_export) * option nat) :=
-  interp_instantiate empty_store_record m nil.
+Definition interp_instantiate_wrapper (hs : host_state) (m : module) : option ((store_record * instance * list module_export) * option nat) :=
+  interp_instantiate hs empty_store_record m nil.
 
 Definition lookup_exported_function (n : name) (store_inst_exps : store_record * instance * list module_export)
     : option (config_tuple host_function) :=
