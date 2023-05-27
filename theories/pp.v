@@ -4,7 +4,7 @@ Require Import Coq.Strings.String.
 From compcert Require Import Floats.
 From mathcomp Require Import ssreflect ssrfun ssrnat ssrbool eqtype seq.
 Require Import Coq.Init.Decimal.
-Require Import bytes_pp datatypes interpreter.
+Require Import bytes_pp datatypes interpreter_func.
 Require BinNatDef.
 Require Import ansi list_extra.
 
@@ -13,12 +13,13 @@ Open Scope string_scope.
 Section Host.
 
 Variable host_function : eqType.
+Let host := host host_function.
+Variable host_instance : host.
 
 Let store_record := store_record host_function.
-(*Let administrative_instruction := administrative_instruction host_function.*)
 Let function_closure := function_closure host_function.
-Let config_tuple := config_tuple host_function.
-Let res_tuple := res_tuple host_function.
+Definition config_tuple := config_tuple host_instance.
+Definition res_tuple := res_tuple host_instance.
 
 Variable show_host_function : host_function -> string.
 
@@ -410,14 +411,15 @@ Definition pp_res_tuple_except_store (res_cfg : res_tuple) : string :=
     "with values " ++ pp_values_hint_empty f.(f_locs) ++ newline
   end.
 
+Print Transparent Dependencies pp_res_tuple_except_store.
+
 End Host.
 
 (** As-is, [eqType] tends not to extract well.
   This section provides alternative definitions for better extraction. **)
-Module PP (EH : Executable_Host).
+Module PP.
 
-Module Exec := convert_to_executable_host EH.
-Import Exec.
+Import EmptyHost.
 
 Section Show.
 
@@ -427,11 +429,17 @@ Definition pp_values : list value -> string := pp_values.
 
 Definition pp_store : nat -> store_record -> string := pp_store _.
 
+(* TODO remove *)
+Check host_instance.
+Print host_instance.
+Check (@pp_res_tuple_except_store _ host_instance).
+Check (@pp_res_tuple_except_store host_state).
+
 Definition pp_res_tuple_except_store : res_tuple -> string :=
-  pp_res_tuple_except_store _.
+  pp_res_tuple_except_store _ host_instance.
 
 Definition pp_config_tuple_except_store : config_tuple -> string :=
-  pp_config_tuple_except_store _.
+  pp_config_tuple_except_store _ host_instance.
 
 End Show.
 
