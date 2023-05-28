@@ -24,5 +24,5 @@ Extraction "extract"
   Interpreter_func
   value_rec_safe
   PP
-  DummyHost.
+  EmptyHost.
 

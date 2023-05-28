@@ -12,14 +12,7 @@ Open Scope string_scope.
 
 Section Host.
 
-Variable host_function : eqType.
-Let host := host host_function.
-Variable host_instance : host.
-
-Let store_record := store_record host_function.
-Let function_closure := function_closure host_function.
-Definition config_tuple := config_tuple host_instance.
-Definition res_tuple := res_tuple host_instance.
+Import EmptyHost.
 
 Variable show_host_function : host_function -> string.
 
@@ -425,13 +418,13 @@ Section Show.
 
 Definition pp_values : list value -> string := pp_values.
 
-Definition pp_store : nat -> store_record -> string := pp_store _.
+Definition pp_store : nat -> store_record -> string := pp_store.
 
 Definition pp_res_tuple_except_store : res_tuple -> string :=
-  pp_res_tuple_except_store _ host_instance.
+  pp_res_tuple_except_store.
 
 Definition pp_config_tuple_except_store : config_tuple -> string :=
-  pp_config_tuple_except_store _ host_instance.
+  pp_config_tuple_except_store.
 
 End Show.
 

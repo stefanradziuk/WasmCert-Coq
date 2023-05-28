@@ -125,6 +125,8 @@ Parameter host_bind : forall t u : Type, host_event t -> (t -> host_event u) -> 
 
 Parameter host_apply : store_record host_function -> function_type -> host_function -> seq value ->
                        host_event (option (store_record host_function * result)).
+Parameter host_function_eqType : eqType.
+Parameter host_instance : host host_function_eqType.
 
 End Executable_Host.
 
@@ -162,16 +164,13 @@ Definition host_functor := Functor_Monad (M := host_monad).
 
 End convert_to_executable_host.
 
+From ExtLib Require Import IdentityMonad.
 
 (** * Host instantiations **)
 
-(** ** Dummy host **)
-
-From ExtLib Require Import IdentityMonad.
-
-(** This host provides no function. **)
-
 Module DummyHost : Executable_Host.
+
+(* XXX is this just the same as DummyHost now? *)
 
 Definition host_function := void.
 Definition host_event := ident.
@@ -184,14 +183,58 @@ Definition host_apply (_ : store_record) (_ : function_type) :=
 Definition host_function_eq_dec : forall f1 f2 : host_function, {f1 = f2} + {f1 <> f2}.
 Proof. decidable_equality. Defined.
 
+Definition host_function_eqb f1 f2 : bool := host_function_eq_dec f1 f2.
+Definition host_functionP : Equality.axiom host_function_eqb :=
+  eq_dec_Equality_axiom host_function_eq_dec.
+
+Canonical Structure host_function_eqMixin := EqMixin host_functionP.
+Canonical Structure host_function_eqType :=
+  Eval hnf in EqType host_function host_function_eqMixin.
+
+Definition host : Type := host host_function_eqType.
+
+Definition function_closure := function_closure host_function_eqType.
+
+Definition host_instance : host.
+Proof.
+  by refine {|
+      host_state := unit_eqType ;
+      host_application _ _ _ _ _ _ _ := False
+    |}; intros; exfalso; auto.
+Defined.
+
+Definition config_tuple := @config_tuple host_function_eqType.
+Definition res_tuple := @res_tuple host_function_eqType.
+
+Definition host_state := @host_state host_function_eqType host_instance.
+
 End DummyHost.
+
+(** ** Dummy host **)
+
+(** This host provides no function. **)
+
+(* Module DummyHost : Executable_Host. *)
+(**)
+(* Definition host_function := void. *)
+(* Definition host_event := ident. *)
+(* Definition host_ret := @ret _ Monad_ident. *)
+(* Definition host_bind := @bind _ Monad_ident. *)
+(* Definition store_record := store_record host_function. *)
+(* Definition host_apply (_ : store_record) (_ : function_type) := *)
+(*   of_void (seq value -> ident (option (store_record * result))). *)
+(**)
+(* Definition host_function_eq_dec : forall f1 f2 : host_function, {f1 = f2} + {f1 <> f2}. *)
+(* Proof. decidable_equality. Defined. *)
+(**)
+(* End DummyHost. *)
 
 Module DummyHosts.
 
 Module Exec := convert_to_executable_host DummyHost.
 Export Exec.
 
-Definition host : Type := host host_function.
+Definition host : Type := host host_function_eqType.
 
 Definition host_instance : host.
 Proof.

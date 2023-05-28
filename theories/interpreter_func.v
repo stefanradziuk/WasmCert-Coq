@@ -3701,9 +3701,20 @@ Admitted.
 
 End Host_func.
 
-Module EmptyHost.
+From ExtLib Require Import IdentityMonad Monad.
+
+Module EmptyHost : Executable_Host.
+(* Module EmptyHost : Executable_Host. *)
+
+(* XXX is this just the same as DummyHost now? *)
 
 Definition host_function := void.
+Definition host_event := ident.
+Definition host_ret := @ret _ Monad_ident.
+Definition host_bind := @bind _ Monad_ident.
+Definition store_record := store_record host_function.
+Definition host_apply (_ : store_record) (_ : function_type) :=
+  of_void (seq value -> ident (option (store_record * result))).
 
 Definition host_function_eq_dec : forall f1 f2 : host_function, {f1 = f2} + {f1 <> f2}.
 Proof. decidable_equality. Defined.
@@ -3718,7 +3729,6 @@ Canonical Structure host_function_eqType :=
 
 Definition host : Type := host host_function_eqType.
 
-Definition store_record := store_record host_function_eqType.
 Definition function_closure := function_closure host_function_eqType.
 
 Definition host_instance : host.
@@ -3729,22 +3739,28 @@ Proof.
     |}; intros; exfalso; auto.
 Defined.
 
-Definition config_tuple := config_tuple host_instance.
-Definition res_tuple := res_tuple host_instance.
+Definition config_tuple := @config_tuple host_function_eqType.
+Definition res_tuple := @res_tuple host_function_eqType.
 
-Definition host_state := host_state host_instance.
+Definition host_state := @host_state host_function.
 
 End EmptyHost.
 
 Module Interpreter_func.
 
 Import EmptyHost.
+Import DummyHosts.
+Import Exec.
+
+Let host_state := host_state host_instance.
+Let host_application := @host_application host_function_eqType host_instance.
+
 
 Definition host_application_impl : host_state -> store_record -> function_type -> host_function_eqType -> seq value ->
                                    (host_state * option (store_record * result)).
 Proof.
-  move => ??? hf; by inversion hf.
-Defined.
+  Fail move => ??? hf ?; by inversion hf.
+Admitted.
 
 Definition host_application_impl_correct :
   (forall hs s ft hf vs hs' hres, (host_application_impl hs s ft hf vs = (hs', hres)) -> host_application hs s ft hf vs hs' hres).
