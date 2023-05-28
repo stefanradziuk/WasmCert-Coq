@@ -411,8 +411,6 @@ Definition pp_res_tuple_except_store (res_cfg : res_tuple) : string :=
     "with values " ++ pp_values_hint_empty f.(f_locs) ++ newline
   end.
 
-Print Transparent Dependencies pp_res_tuple_except_store.
-
 End Host.
 
 (** As-is, [eqType] tends not to extract well.
@@ -428,12 +426,6 @@ Section Show.
 Definition pp_values : list value -> string := pp_values.
 
 Definition pp_store : nat -> store_record -> string := pp_store _.
-
-(* TODO remove *)
-Check host_instance.
-Print host_instance.
-Check (@pp_res_tuple_except_store _ host_instance).
-Check (@pp_res_tuple_except_store host_state).
 
 Definition pp_res_tuple_except_store : res_tuple -> string :=
   pp_res_tuple_except_store _ host_instance.
