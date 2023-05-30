@@ -1682,19 +1682,31 @@ Proof.
   by rewrite Hsmem' in Hsmem.
 Qed.
 
+Lemma mem_grow_restricted_impl m len_delta m':
+  mem_grow_restricted m len_delta = Some m' ->
+  mem_grow m len_delta = Some m'.
+Proof.
+  move => Hmemgrow.
+  unfold mem_grow_restricted in Hmemgrow.
+  by destruct (N.leb _ _).
+Qed.
+
 (* TODO extend simpl_reduce_simple to handle this? *)
+(* This now uses the restricted mem_grow version to avoid overflowing *)
 Lemma reduce_grow_memory : forall (hs : host_state) s s' f c v ves' mem'' s_mem_s_j j l,
   smem_ind s f.(f_inst) = Some j ->
   List.nth_error (s_mems s) j = Some s_mem_s_j ->
   l = mem_size s_mem_s_j ->
-  Some mem'' = mem_grow s_mem_s_j (Wasm_int.N_of_uint i32m c) ->
+  Some mem'' = mem_grow_restricted s_mem_s_j (Wasm_int.N_of_uint i32m c) ->
   s' = upd_s_mem s (update_list_at (s_mems s) j mem'') ->
   v = VAL_int32 (Wasm_int.int_of_Z i32m (Z.of_nat l)) ->
   reduce
     hs s f (vs_to_es (VAL_int32 c :: ves') ++ [:: AI_basic BI_grow_memory])
     hs s' f (vs_to_es (v :: ves')).
 Proof.
-  intros hs s s' f c v ves' mem'' s_mem_s_j j l ??????. subst s' v l.
+  intros hs s s' f c v ves' mem'' s_mem_s_j j l ??? Hmemgrow ??. subst s' v l.
+  symmetry in Hmemgrow.
+  apply mem_grow_restricted_impl in Hmemgrow.
   eapply r_label with (k := 0) (lh := (LH_base (vs_to_es ves') [::]));
     try by solve_lfilled.
   by apply r_grow_memory_success with (m := s_mem_s_j) (c := c).
@@ -1704,7 +1716,7 @@ Lemma reduce_grow_memory_failure : forall (hs : host_state) s f c ves' s_mem_s_j
   smem_ind s f.(f_inst) = Some j ->
   List.nth_error (s_mems s) j = Some s_mem_s_j ->
   l = mem_size s_mem_s_j ->
-  mem_grow s_mem_s_j (Wasm_int.N_of_uint i32m c) = None ->
+  mem_grow_restricted s_mem_s_j (Wasm_int.N_of_uint i32m c) = None ->
   reduce
     hs s f (vs_to_es (VAL_int32 c :: ves') ++ [:: AI_basic BI_grow_memory])
     hs s f (vs_to_es (VAL_int32 int32_minus_one :: ves')).
@@ -3175,7 +3187,7 @@ Proof.
       + (* Some j *)
         destruct (List.nth_error s.(s_mems) j) as [s_mem_s_j|] eqn:Heqsmem.
         -- (* Some s_mem_s_j *)
-           remember (mem_grow s_mem_s_j (Wasm_int.N_of_uint i32m c)) as mem'.
+           remember (mem_grow_restricted s_mem_s_j (Wasm_int.N_of_uint i32m c)) as mem'.
            destruct mem' as [mem''|].
            ** (* Some mem'' *)
               remember (VAL_int32 (Wasm_int.int_of_Z i32m (Z.of_nat (mem_size s_mem_s_j)))) as v'.

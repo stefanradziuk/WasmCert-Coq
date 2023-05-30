@@ -68,10 +68,9 @@ Definition mem_size (m : memory) : N :=
 (** Grow the memory a given number of pages.
   * @param len_delta: the number of pages to grow the memory by
   *)
-
 Definition mem_grow (m : memory) (len_delta : N) : option memory :=
   let new_size := N.add (mem_size m) len_delta in
-  let new_mem_data := mem_grow (N.mul len_delta page_size) m.(mem_data) in
+  let new_mem_data := memory_list.mem_grow (N.mul len_delta page_size) m.(mem_data) in
   if N.leb new_size page_limit then
   match m.(mem_max_opt) with
   | Some maxlim =>
@@ -87,6 +86,14 @@ Definition mem_grow (m : memory) (len_delta : N) : option memory :=
       mem_max_opt := m.(mem_max_opt);
       |}
   end
+  else None.
+
+Definition mem_embedder_limit : N := 3.
+
+Definition mem_grow_restricted (m : memory) (len_delta : N) : option memory :=
+  let new_size := N.add (mem_size m) len_delta in
+  if (N.leb new_size mem_embedder_limit) then
+  mem_grow m len_delta
   else None.
 
 (* TODO: We crucially need documentation here. *)
