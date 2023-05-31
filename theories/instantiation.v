@@ -815,10 +815,33 @@ Definition interp_instantiate (hs : host_state) (s : store_record) (m : module) 
   end.
 
 Lemma interp_instantiate_imp_instantiate :
-  forall (hs : host_state) s m v_imps hs s_end inst v_exps start,
+  forall (hs : host_state) s m v_imps s_end inst v_exps start,
   interp_instantiate hs s m v_imps = Some ((hs, s_end, inst, v_exps), start) ->
   instantiate s m v_imps ((s_end, inst, v_exps), start).
 Proof.
+  intros hs s m v_imps s_end inst v_exps start H.
+  unfold instantiate. unfold interp_instantiate in H.
+  destruct (module_type_checker m) eqn:? => //.
+  destruct p as [t_imps ?] eqn:?.
+  destruct (all2 (external_type_checker s) v_imps t_imps) eqn:? => //.
+  destruct (those
+    (map (fun g => interp_get_v s
+      {|
+        inst_types := [::];
+        inst_funcs := [::];
+        inst_tab := [::];
+        inst_memory := [::];
+        inst_globs :=
+        List.map (fun '(Mk_globalidx i) => i) (ext_globs v_imps)
+      |} (modglob_init g))
+    (mod_globals m))) eqn:? => //.
+  destruct (interp_alloc_module s m v_imps l0) as [[s' inst'] v_exps'] eqn:?.
+  destruct (those (map (fun e => interp_get_i32 s' inst' (modelem_offset e)) (mod_elem m))) eqn:? => //.
+  destruct (those (map (fun d => interp_get_i32 s' inst' (moddata_offset d)) (mod_data m))) eqn:? => //.
+  destruct (check_bounds_elem inst' s' m l1 && check_bounds_data inst' s' m l2) eqn:? => //.
+  injection H as H1 H2 H3 H4.
+  subst inst' v_exps' start s_end.
+  repeat eexists => //.
 Admitted. (* TODO *)
 
 Definition empty_store_record : store_record := {|
