@@ -108,23 +108,23 @@ Open Scope list.
 Fixpoint pp_bools (acc : list Byte.byte) (bools : list bool) : list Byte.byte :=
   (* TODO: I am ashamed I wrote this *)
   match bools with
-  | nil => acc
+  | nil => List.rev acc
   | b1 :: b2 :: b3 :: b4 :: b5 :: b6 :: b7 :: b8 :: bools' =>
-    pp_bools (Byte.of_bits (b1, (b2, (b3, (b4, (b5, (b6, (b7, b8))))))) :: acc) bools'
+    pp_bools (Byte.of_bits (b8, (b7, (b6, (b5, (b4, (b3, (b2, b1))))))) :: acc) bools'
   | b1 :: b2 :: b3 :: b4 :: b5 :: b6 :: b7 ::  nil =>
-    Byte.of_bits (b1, (b2, (b3, (b4, (b5, (b6, (b7, false))))))) :: acc
+    Byte.of_bits (false, (b7, (b6, (b5, (b4, (b3, (b2, b1))))))) :: acc
   | b1 :: b2 :: b3 :: b4 :: b5 :: b6 :: nil =>
-    Byte.of_bits (b1, (b2, (b3, (b4, (b5, (b6, (false, false))))))) :: acc
+    Byte.of_bits (false, (false, (b6, (b5, (b4, (b3, (b2, b1))))))) :: acc
   | b1 :: b2 :: b3 :: b4 :: b5 :: nil =>
-    Byte.of_bits (b1, (b2, (b3, (b4, (b5, (false, (false, false))))))) :: acc
+    Byte.of_bits (false, (false, (false, (b5, (b4, (b3, (b2, b1))))))) :: acc
   | b1 :: b2 :: b3 :: b4 :: nil =>
-    Byte.of_bits (b1, (b2, (b3, (b4, (false, (false, (false, false))))))) :: acc
+    Byte.of_bits (false, (false, (false, (false, (b4, (b3, (b2, b1))))))) :: acc
   | b1 :: b2 :: b3 :: nil =>
-    Byte.of_bits (b1, (b2, (b3, (false, (false, (false, (false, false))))))) :: acc
+    Byte.of_bits (false, (false, (false, (false, (false, (b3, (b2, b1))))))) :: acc
   | b1 :: b2 :: nil =>
-    Byte.of_bits (b1, (b2, (false, (false, (false, (false, (false, false))))))) :: acc
+    Byte.of_bits (false, (false, (false, (false, (false, (false, (b2, b1))))))) :: acc
   | b1 :: nil =>
-    Byte.of_bits (b1, (false, (false, (false, (false, (false, (false, false))))))) :: acc
+    Byte.of_bits (false, (false, (false, (false, (false, (false, (false, b1))))))) :: acc
   end.
 
 Definition pp_f32 (f : float32) : string :=
