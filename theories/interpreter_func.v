@@ -389,6 +389,85 @@ Ltac simpl_reduce_simple :=
         try solve_lfilled; apply r_simple
   end.
 
+Theorem br_example_1 : forall (hs : host_state) s f bvs es,
+  const_list bvs ->
+  reduce
+    hs s f [:: AI_label (length bvs) es (bvs ++ [::AI_basic (BI_br 0)])]
+    hs s f (bvs ++ es).
+Proof.
+  intros hs s f bvs es ?.
+  apply r_simple.
+  apply rs_br with (i := 0) (lh := LH_base [::] [::]) => //.
+  by solve_lfilled.
+Qed.
+
+Theorem br_example_2 : forall bvs es es' k,
+  const_list bvs ->
+  reduce_simple
+    [::
+      AI_label
+      (length bvs)
+      es
+      [:: AI_label k es' (bvs ++ [::AI_basic (BI_br 1)])]
+    ]
+    (bvs ++ es).
+Proof.
+  intros bvs es es' k ?.
+  apply rs_br with
+    (i := 1)
+    (lh := LH_rec [::] k es' (LH_base [::] [::]) [::]) => //.
+  by solve_lfilled.
+Qed.
+
+Theorem br_example_3 : forall vs bvs es es' es'' k,
+  const_list vs ->
+  const_list bvs ->
+  reduce_simple
+    [::
+      AI_label
+      (length bvs)
+      es
+      [:: AI_label k es' (vs ++ bvs ++ [::AI_basic (BI_br 1)] ++ es'')]
+    ]
+    (bvs ++ es).
+Proof.
+  intros vs bvs es es' es'' k ??.
+  apply rs_br with
+    (i := 1)
+    (lh := LH_rec [::] k es' (LH_base vs es'') [::]) => //.
+  replace ([:: AI_label k es' (vs ++ bvs ++ [:: AI_basic (BI_br 1)] ++ es'')])
+    with ([::] ++ [:: AI_label k es' (vs ++ bvs ++ [:: AI_basic (BI_br 1)] ++ es'')] ++ [::]) => //.
+  replace (vs ++ bvs ++ [:: AI_basic (BI_br 1)] ++ es'')
+    with (vs ++ (bvs ++ [:: AI_basic (BI_br 1)]) ++ es''); last by rewrite <- catA.
+  apply/lfilledP.
+  apply LfilledRec => //.
+  by apply LfilledBase.
+Qed.
+
+Theorem br_example_4 : forall vs vs' bvs es es' es'' es''' k,
+  const_list vs ->
+  const_list vs' ->
+  const_list bvs ->
+  reduce_simple
+    [::
+      AI_label
+      (length bvs)
+      es
+      (vs' ++ [:: AI_label k es' (vs ++ bvs ++ [::AI_basic (BI_br 1)] ++ es'')] ++ es''')
+    ]
+    (bvs ++ es).
+Proof.
+  intros vs vs' bvs es es' es'' es''' k ???.
+  apply rs_br with
+    (i := 1)
+    (lh := LH_rec vs' k es' (LH_base vs es'') es''') => //.
+  replace (vs ++ bvs ++ [:: AI_basic (BI_br 1)] ++ es'')
+    with (vs ++ (bvs ++ [:: AI_basic (BI_br 1)]) ++ es''); last by rewrite <- catA.
+  apply/lfilledP.
+  apply LfilledRec => //.
+  by apply LfilledBase.
+Qed.
+
 Lemma error_rec : forall s f e es es' es'' ves,
   es' = e :: es'' ->
   split_vals_e es = (ves, es') ->
