@@ -1,7 +1,7 @@
 From mathcomp Require Import eqtype seq.
 From Coq Require Import Program.Equality ZArith_base Extraction.
 From Wasm Require Export type_progress type_preservation
-  type_checker type_checker_reflects_typing.
+  type_checker type_checker_reflects_typing pp.
 
 
 Module ProgressExtract.
@@ -26,6 +26,12 @@ Definition interpret_one_step := @interpret_one_step host_eqType host_instance.
 Definition interpret_multi_step := @interpret_multi_step host_eqType host_instance.
 
 Definition t_preservation := t_preservation.
+
+Definition pp_head_val (es : list administrative_instruction) :=
+  match es with
+  | [:: AI_basic (BI_const v)] => pp_value v
+  | _ => String.EmptyString
+  end.
 
 Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
 
@@ -64,6 +70,8 @@ Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
  * $tmp: 4
  *)
 
+Let n : Z := 50.
+
 Definition loop_body : seq basic_instruction := [::
   (* i += 1 *)
   BI_get_local 1;
@@ -94,7 +102,7 @@ Definition loop_body : seq basic_instruction := [::
 
 Definition fib_bis : seq basic_instruction := [::
   (* n = 10 *)
-  BI_const (i32_of_Z 10);
+  BI_const (i32_of_Z n);
   BI_set_local 0;
 
   (* i = 0 *)
@@ -186,16 +194,25 @@ Defined.
 
 Definition ts_fib := [:: T_i32].
 
-Definition fuel_100 : nat := 100.
+(* TODO use Z for fuel *)
+Definition fuel_fib : nat := Z.to_nat (Z.mul n 20).
 
 End ProgressExtract.
+
+From Coq Require Import
+  extraction.ExtrOcamlBasic
+  extraction.ExtrOcamlString.
 
 Extraction Language OCaml.
 
 Extraction "progress_extracted" ProgressExtract DummyHost.
 
 (*
-   # ProgressExtract.interpret_multi_step ProgressExtract.fuel_100 ProgressExtract.emp_store_record ProgressExtract.emp_frame ProgressExtract.add_236 ProgressExtract.ts_add_236 (Obj.magic ProgressExtract.host_eqType) ProgressExtract.coq_H_config_typing_add_236;;
+   # let e' = ProgressExtract.interpret_multi_step ProgressExtract.fuel_fib ProgressExtract.emp_store_record ProgressExtract.loc_frame ProgressExtract.fib ProgressExtract.ts_fib (Obj.magic ProgressExtract.host_eqType) ProgressExtract.coq_H_config_typing_fib;;
+#   let cl2s cl = String.concat "" (List.map (String.make 1) cl);;
+#   let ppstr = ProgressExtract.pp_head_val e' in " " ^ (cl2s ppstr);;
+- : string = " i32.const -298632863\n"
+
  *)
 
 (*
