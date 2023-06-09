@@ -70,7 +70,7 @@ Definition i64_of_Z (z: Z) := VAL_int64 (Wasm_int.int_of_Z i64m z).
  * $tmp: 4
  *)
 
-Let n : Z := 50.
+Let n : Z := 60.
 
 Definition loop_body : seq basic_instruction := [::
   (* i += 1 *)
@@ -218,31 +218,5 @@ val itp_partially_applied : config_typing -> administrative_instruction list =
   <fun>
 #   let e' = time itp_partially_applied ProgressExtract.coq_H_config_typing_fib;;
 execution time: 21.410549s
-
-
- *)
-
-(*
- * Depending on the GHC version, the extracted code may have to be patched.
- * The Coq-extracted code tries to find unsafeCoerce# in GHC.Base, this has to
- * be changed to GHC.Exts (and `import qualified GHC.Exts` added).
- *
- * This is how to single-step reduce add_2_7 in haskell:
- * λ :f add_2_7
- * add_2_7 = Cons
- *             (AI_basic (BI_const (VAL_int32 (Zpos (XO XH)))))
- *             (Cons
- *                (AI_basic (BI_const (VAL_int32 (Zpos (XI (XI XH))))))
- *                (Cons (AI_basic (BI_binop T_i32 (Binop_i0 BOI_add))) Nil))
- * λ add_2_7' = interpret_one_step host_function host_instance emp_store_record emp_frame add_2_7 ts_add_2_7 (unsafeCoerce Tt) h_config_typing_add_2_7
- * λ :f add_2_7'
- * add_2_7' = Cons
- *              (AI_basic (BI_const (VAL_int32 (Zpos (XI (XO (XO XH))))))) Nil
- *
- * NOTE the use of (unsafeCoerce Tt) for hs.
- * It's probably fine as it's expecting a singleton there (is it?) but might
- * break if progress tries to inspect hs.
- * `undefined` also works but you have to be careful not to attempt printing it
- * when examining intermediate steps.
  *)
 
