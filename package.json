@@ -9,7 +9,7 @@
 			"COQBIN": "#{@opam/coq.bin}/",
 			"COQLIB": "#{@opam/coq.lib}/coq/",
 			"COQPATH": "#{coq-ext-lib.install}/user-contrib:#{coq-flocq.install}/coq:#{coq-itree.install}/user-contrib:#{coq-paco.install}/user-contrib:#{strong-induction.install}/lib/coq/user-contrib:#{compcert.install}/coq:#{coq-mathcomp-ssreflect.install}/user-contrib:#{parseque.install}/lib/coq/user-contrib",
-			"VSCODESETTINGS": "{\"coqtop.binPath\":\"#{@opam/coq.root}/bin\",\"coqtop.args\":[\"-coqlib\",\"#{@opam/coq.root}\",\"-R\",\"#{coq-ext-lib.install}/user-contrib\",\"ExtLib\",\"-R\",\"#{coq-flocq.install}/coq\",\"Flocq\",\"-R\",\"#{coq-itree.install}/user-contrib\",\"ITree\",\"-R\",\"#{coq-paco.install}/user-contrib\",\"Paco\",\"-R\",\"#{strong-induction.install}/lib/coq/user-contrib\",\"StrongInduction\",\"-R\",\"#{compcert.install}/coq\",\"compcert\",\"-R\",\"#{coq-mathcomp-ssreflect.install}/user-contrib\",\"mathcomp\",\"-R\",\"#{parseque.install}/lib/coq/user-contrib\",\"parseque\",\"-R\",\"#{self.root}/_build/default/theories\",\"\"]}",
+			"VSCODESETTINGS": "{\"coqtop.binPath\":\"#{@opam/coq.root}/bin\",\"coqtop.args\":[\"-coqlib\",\"#{@opam/coq.root}\",\"-R\",\"#{coq-ext-lib.install}/user-contrib/ExtLib\",\"ExtLib\",\"-R\",\"#{coq-flocq.install}/coq\",\"Flocq\",\"-R\",\"#{coq-itree.install}/user-contrib/ITree\",\"ITree\",\"-R\",\"#{coq-paco.install}/user-contrib/Paco\",\"Paco\",\"-R\",\"#{strong-induction.install}/lib/coq/user-contrib/StrongInduction\",\"StrongInduction\",\"-R\",\"#{compcert.install}/coq\",\"compcert\",\"-R\",\"#{coq-mathcomp-ssreflect.install}/user-contrib/mathcomp\",\"mathcomp\",\"-R\",\"#{parseque.install}/lib/coq/user-contrib/parseque\",\"parseque\",\"-R\",\"#{self.root}/_build/default/theories\",\"Wasm\"]}",
 			"TARGETDIR": "#{self.target_dir}"
 		},
 		"build": "make"
@@ -18,7 +18,7 @@
 		"clean": "make clean",
 		"doc": "dune build @doc",
 		"test": "dune runtest",
-		"vscode": "make vscode"
+		"vscode": "make --always-make vscode"
 	},
 	"dependencies": {
 		"ocaml": "4.14.0", 
@@ -29,7 +29,7 @@
 		"@opam/mdx": ">=1.9.0",
 		"@opam/menhir": "*",
 		"@opam/ocamlfind": "1.9.3",
-		"@opam/odoc": "*",
+	        "@opam/odoc": "*",
 		"compcert": "github:raoxiaojia/CompCert#ad331c0f60d53d14601cd44412269a184ba63721",
 		"coq-ext-lib": "*",
 		"coq-flocq": "*",
@@ -40,7 +40,8 @@
 		"strong-induction": "github:iriswasm/strong-induction"
 	},
 	"devDependencies": {},
-	"resolutions": {
+	"resolutions": {  
+	        "esy-gmp": "github:esy-packages/esy-gmp#99191060430b6656e0948d8b31fb622a9ea99039",
 		"coq-mathcomp-ssreflect": {
 			"source": "github:math-comp/math-comp#6bff567e84b01c1b3502985ec936b9e74ea252b4",
 			"override": {

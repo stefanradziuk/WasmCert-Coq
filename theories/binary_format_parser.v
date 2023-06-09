@@ -521,7 +521,7 @@ Definition parse_elem_type {n} : byte_parser elem_type n :=
   exact_byte x70 $> ELT_funcref.
 
 Definition parse_table_type {n} : byte_parser table_type n :=
-  ((fun lims ety => {| tt_limits := lims; tt_elem_type := ety |}) <$> parse_limits) <*> parse_elem_type.
+  ((fun ety lims => {| tt_limits := lims; tt_elem_type := ety |}) <$> parse_elem_type) <*> parse_limits.
 
 Definition parse_memory_type {n} : byte_parser memory_type n :=
   (fun lim => lim) <$> parse_limits.
@@ -567,10 +567,10 @@ Definition parse_nat_value_type {n} : byte_parser (list value_type) n :=
   ((fun k t => List.repeat t k) <$> parse_u32_as_nat) <*> parse_value_type.
 
 Definition parse_locals {n} : byte_parser (list value_type) n :=
-  (fun tss => List.concat tss) <$> (parse_vec parse_nat_value_type).
+  (fun tss => tss) <$> parse_nat_value_type.
 
 Definition parse_func {n} : byte_parser code_func n :=
-  ((fun locals e => {| fc_locals := List.concat locals; fc_expr := e |})  <$> parse_vec parse_locals) <*> parse_expr.
+  ((fun locals e => {| fc_locals := List.concat locals; fc_expr := e |}) <$> parse_vec parse_locals) <*> parse_expr.
 
 Definition parse_code {n} : byte_parser code_func n :=
   guardM
@@ -604,7 +604,7 @@ Definition parse_tablesec {n} : byte_parser (list module_table) n :=
   exact_byte x04 &> parse_u32_as_int32 &> parse_vec parse_module_table.
 
 Definition parse_memsec {n} : byte_parser (list memory_type) n :=
-  exact_byte x05 &> parse_memidx &> parse_vec parse_memory_type.
+  exact_byte x05 &> parse_u32_as_int32 &> parse_vec parse_memory_type.
 
 Definition parse_globalsec {n} : byte_parser (list module_glob) n :=
   exact_byte x06 &> parse_u32_as_int32 &> parse_vec parse_module_glob.
