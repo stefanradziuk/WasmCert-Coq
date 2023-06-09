@@ -1,14 +1,29 @@
 From mathcomp Require Import eqtype seq.
 From Coq Require Import Program.Equality ZArith_base Extraction.
 From Wasm Require Export type_progress type_preservation
-  type_checker type_checker_reflects_typing host.
+  type_checker type_checker_reflects_typing.
 
 
 Module ProgressExtract.
 
-Definition t_progress := t_progress.
-Definition interpret_one_step := interpret_one_step.
-Definition interpret_multi_step := interpret_multi_step.
+Let host_eqType := unit_eqType.
+
+Definition host : Type := host unit_eqType.
+
+Definition host_instance : host.
+Proof.
+  refine {|
+    host_state := unit_eqType ;
+    host_application _ _ _ _ _ _ _ := False
+  |}; intros; exfalso; auto.
+Defined.
+
+Let store_record := store_record host_eqType.
+Let config_typing := @config_typing host_eqType.
+
+Definition t_progress := @t_progress host_eqType host_instance.
+Definition interpret_one_step := @interpret_one_step host_eqType host_instance.
+Definition interpret_multi_step := @interpret_multi_step host_eqType host_instance.
 
 Definition t_preservation := t_preservation.
 
@@ -23,9 +38,6 @@ Definition add_236_bis : seq basic_instruction := [::
   ].
 
 Definition add_236 : seq administrative_instruction := map AI_basic add_236_bis.
-
-Let store_record := store_record (host_state DummyHosts.host_instance).
-Let config_typing := @config_typing (host_state DummyHosts.host_instance).
 
 Let emp_store_record : store_record := {|
   s_funcs   := [::];
@@ -85,6 +97,10 @@ End ProgressExtract.
 Extraction Language OCaml.
 
 Extraction "progress_extracted" ProgressExtract DummyHost.
+
+(*
+   # ProgressExtract.interpret_multi_step ProgressExtract.fuel_100 ProgressExtract.emp_store_record ProgressExtract.emp_frame ProgressExtract.add_236 ProgressExtract.ts_add_236 (Obj.magic ProgressExtract.host_eqType) ProgressExtract.coq_H_config_typing_add_236;;
+ *)
 
 (*
  * Depending on the GHC version, the extracted code may have to be patched.
