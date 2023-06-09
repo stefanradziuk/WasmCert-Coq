@@ -1,15 +1,10 @@
 From mathcomp Require Import eqtype seq.
 From Coq Require Import Program.Equality ZArith_base Extraction.
 From Wasm Require Export type_progress type_preservation
-  type_checker type_checker_reflects_typing.
+  type_checker type_checker_reflects_typing host.
 
 
 Module ProgressExtract.
-
-Variable host_function : eqType.
-Let host := host host_function.
-Variable host_instance : host.
-Let host_state := host_state host_instance.
 
 Definition t_progress := t_progress.
 Definition interpret_one_step := interpret_one_step.
@@ -29,7 +24,8 @@ Definition add_236_bis : seq basic_instruction := [::
 
 Definition add_236 : seq administrative_instruction := map AI_basic add_236_bis.
 
-Let store_record := store_record host_function.
+Let store_record := store_record (host_state DummyHosts.host_instance).
+Let config_typing := @config_typing (host_state DummyHosts.host_instance).
 
 Let emp_store_record : store_record := {|
   s_funcs   := [::];
@@ -70,8 +66,6 @@ Proof.
   assumption.
 Qed.
 
-Axiom admit_custom : forall (A : Type), A.
-
 Theorem H_config_typing_add_236 : config_typing emp_store_record emp_frame add_236 [:: T_i32].
 Proof.
   apply mk_config_typing.
@@ -89,8 +83,6 @@ Definition fuel_100 : nat := 100.
 End ProgressExtract.
 
 Extraction Language OCaml.
-
-Unset Extraction Optimize.
 
 Extraction "progress_extracted" ProgressExtract DummyHost.
 

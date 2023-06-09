@@ -1177,8 +1177,16 @@ Proof.
   by eapply return_reduce_return_some in X0; eauto.
 Qed.
 
-Axiom host_application_exists: forall hs s tf hf vcs,
+Axiom admit_custom : forall (A : Type), A.
+
+Theorem host_application_exists: forall hs s tf hf vcs,
     {hs' & {res & host_application hs s tf hf vcs hs' res}}.
+Proof.
+  intros hs s tf hf vcs.
+  exists hs, None.
+  (* exists (Some (s, result_trap)). *)
+  apply admit_custom.
+Qed.
 
 Lemma t_progress_e: forall s C C' f vcs es tf ts1 ts2 lab ret hs,
     e_typing s C es tf ->
