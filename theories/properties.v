@@ -863,19 +863,18 @@ Proof.
   { by split; apply lfilled_Ind_Equivalent. }
   case lh.
   - move=> vsh esh.
-    have: pickableT2 (fun vs es'' => (es' = vs ++ es ++ es'') ** (const_list vs) ** (vs = vsh /\ es'' = esh)).
+    have: pickable2 (fun vs es'' => (es' = vs ++ es ++ es'') /\ (const_list vs) /\ (vs = vsh /\ es'' = esh)).
     {
-      apply: list_search_split_pickableT2.
+      apply: list_search_split_pickable2.
       - by apply: administrative_instruction_eq_dec.
       - move=> ? ?.
-        apply decidableT_and;
-          try apply decidableT_and_conj;
-          apply decidable_decidableT;
-          apply eq_comparable.
+        apply decidable_and.
+        * apply eq_comparable.
+        * apply decidable_and; apply eq_comparable.
     }
     case.
     + move=> [[vs es''] [E [C [E1 E2]]]]. left. subst. by constructor.
-    + move=> nE. right. move=> I. apply: nE. inversion I. subst. by repeat eexists.
+    + move=> nE. right. move=> I. exfalso. apply: nE. inversion I. subst. by repeat eexists.
   - move=> vs n es'' lh' es'''. right. move=> I. by inversion I.
 Defined.
 

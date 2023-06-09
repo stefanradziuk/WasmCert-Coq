@@ -232,9 +232,18 @@ Proof.
   - move=> N. right. move=> [x p]. apply: N. move: (E2 _ p) => [a p']. by exists a.
 Defined.
 
-(* XXX the Prop version was not used anymore
- * decide whether others should be deleted
- *)
+Lemma pickable2_convert : forall A1 A2 B1 B2 (P1 P2 : _ -> _ -> Prop) (f : A1 * A2 -> B1 * B2),
+  (forall a1 a2, P1 a1 a2 -> let (b1, b2) := f (a1, a2) in P2 b1 b2) ->
+  (forall b1 b2, P2 b1 b2 -> exists a1 a2, P1 a1 a2) ->
+  pickable2 P1 ->
+  pickable2 P2.
+Proof.
+  move=> A1 A2 B1 B2 P1 P2 f E1 E2. case.
+  - move=> [[x1 x2] p]. left. exists (f (x1, x2)). by apply: E1.
+  - move=> N. right. move=> [x1 [x2 p]]. apply: N. move: (E2 _ _ p) => [a1 [a2 p']].
+    exists a1. by exists a2.
+Defined.
+
 Lemma pickable2_convert_T : forall A1 A2 B1 B2 (P1 P2 : _ -> _ -> Type) (f : A1 * A2 -> B1 * B2),
   (forall a1 a2, P1 a1 a2 -> let (b1, b2) := f (a1, a2) in P2 b1 b2) ->
   (forall b1 b2, P2 b1 b2 -> {a1 & {a2 & P1 a1 a2}}) ->

@@ -172,7 +172,7 @@ Qed.
 
 Lemma Testop_typing: forall C t op t1s t2s,
     be_typing C [::BI_testop t op] (Tf t1s t2s) ->
-    {ts & (t1s = ts ++ [::t]) ** (t2s = ts ++ [::T_i32])}.
+    {ts & (t1s = ts ++ [::t]) /\ (t2s = ts ++ [::T_i32])}.
 Proof.
   move => C t op t1s t2s HType.
   gen_ind_subst HType.
@@ -188,7 +188,7 @@ Qed.
 
 Lemma Relop_typing: forall C t op t1s t2s,
     be_typing C [::BI_relop t op] (Tf t1s t2s) ->
-    {ts & (t1s = ts ++ [::t; t]) ** (t2s = ts ++ [::T_i32])}.
+    {ts & (t1s = ts ++ [::t; t]) /\ (t2s = ts ++ [::T_i32])}.
 Proof.
   move => C t op t1s t2s HType.
   gen_ind_subst HType.
@@ -204,7 +204,7 @@ Qed.
 
 Lemma Cvtop_typing: forall C t1 t2 op sx t1s t2s,
     be_typing C [::BI_cvtop t2 op t1 sx] (Tf t1s t2s) ->
-    {ts & (t1s = ts ++ [::t1]) ** (t2s = ts ++ [::t2])}.
+    {ts & (t1s = ts ++ [::t1]) /\ (t2s = ts ++ [::t2])}.
 Proof.
   move => C t1 t2 op sx t1s t2s HType.
   gen_ind_subst HType.
@@ -247,7 +247,7 @@ Qed.
 
 Lemma Select_typing: forall C t1s t2s,
     be_typing C [::BI_select] (Tf t1s t2s) ->
-    {ts & {t & (t1s = ts ++ [::t; t; T_i32]) ** (t2s = ts ++ [::t])}}.
+    {ts & {t & (t1s = ts ++ [::t; t; T_i32]) /\ (t2s = ts ++ [::t])}}.
 Proof.
   move => C t1s t2s HType.
   gen_ind_subst HType => //.
@@ -280,8 +280,8 @@ Qed.
 
 Lemma Br_if_typing: forall C ts1 ts2 i,
     be_typing C [::BI_br_if i] (Tf ts1 ts2) ->
-    {ts & {ts' & (ts2 = ts ++ ts') ** (ts1 = ts2 ++ [::T_i32]) **
-      (i < length (tc_label C)) ** (plop2 C i ts')}}.
+    {ts & {ts' & (ts2 = ts ++ ts') /\ (ts1 = ts2 ++ [::T_i32]) /\
+      (i < length (tc_label C)) /\ (plop2 C i ts')}}.
 Proof.
   move => C ts1 ts2 i HType.
   gen_ind_subst HType.
@@ -303,7 +303,7 @@ Qed.
 (* TODO need sigma? *)
 Lemma Br_table_typing: forall C ts1 ts2 ids i0,
     be_typing C [::BI_br_table ids i0] (Tf ts1 ts2) ->
-    {ts1' & {ts & (ts1 = ts1' ++ ts ++ [::T_i32]) **
+    {ts1' & {ts & (ts1 = ts1' ++ ts ++ [::T_i32]) /\
                          (all (fun i => (i < length (tc_label C)) && (plop2 C i ts)) (ids ++ [::i0]))}}.
 Proof.
   move => C ts1 ts2 ids i0 HType.
@@ -321,7 +321,7 @@ Qed.
 
 Lemma Tee_local_typing: forall C i ts1 ts2,
     be_typing C [::BI_tee_local i] (Tf ts1 ts2) ->
-    {ts & {t & (ts1 = ts2) ** (ts1 = ts ++ [::t]) ** (i < length (tc_local C)) **
+    {ts & {t & (ts1 = ts2) /\ (ts1 = ts ++ [::t]) /\ (i < length (tc_local C)) /\
       (List.nth_error (tc_local C) i = Some t)}}.
 Proof.
   move => C i ts1 ts2 HType.
@@ -971,9 +971,9 @@ Qed.
 
 Lemma Break_typing: forall n C t1s t2s,
     be_typing C [::BI_br n] (Tf t1s t2s) ->
-    {ts & {ts0 & (n < size (tc_label C)) **
-               (plop2 C n ts) **
-               (t1s = ts0 ++ ts)}}.
+    {ts & {ts0 & n < size (tc_label C) /\
+               plop2 C n ts /\
+               t1s = ts0 ++ ts}}.
 Proof.
   move => n C t1s t2s HType.
   dependent induction HType => //=.
@@ -1554,9 +1554,9 @@ Qed.
 Lemma Call_typing: forall j C t1s t2s,
     be_typing C [::BI_call j] (Tf t1s t2s) ->
     {ts & {t1s' & {t2s' &
-                     (j < length (tc_func_t C)) **
-                       (List.nth_error (tc_func_t C) j = Some (Tf t1s' t2s')) **
-                       (t1s = ts ++ t1s') **
+                     (j < length (tc_func_t C)) /\
+                       (List.nth_error (tc_func_t C) j = Some (Tf t1s' t2s')) /\
+                       (t1s = ts ++ t1s') /\
                        (t2s = ts ++ t2s')}}}.
 Proof.
   move => j C t1s t2s HType.
@@ -1573,10 +1573,10 @@ Qed.
 Lemma Call_indirect_typing: forall i C t1s t2s,
     be_typing C [::BI_call_indirect i] (Tf t1s t2s) ->
     {tn & {tm & {ts &
-                   (tc_table C <> nil) **
-                     (i < length (tc_types_t C)) **
-                     (List.nth_error (tc_types_t C) i = Some (Tf tn tm)) **
-                     (t1s = ts ++ tn ++ [::T_i32]) **
+                   (tc_table C <> nil) /\
+                     (i < length (tc_types_t C)) /\
+                     (List.nth_error (tc_types_t C) i = Some (Tf tn tm)) /\
+                     (t1s = ts ++ tn ++ [::T_i32]) /\
                      (t2s = ts ++ tm)}}}.
 Proof.
   move => i C t1s t2s HType.
@@ -1691,7 +1691,7 @@ Lemma Invoke_func_host_typing: forall s C a cl h tn tm t1s t2s,
     e_typing s C [::AI_invoke a] (Tf t1s t2s) ->
     List.nth_error s.(s_funcs) a = Some cl ->
     cl = FC_func_host (Tf tn tm) h ->
-    {ts & (t1s = ts ++ tn) ** (t2s = ts ++ tm)}.
+    {ts & (t1s = ts ++ tn) /\ (t2s = ts ++ tm)}.
 Proof.
   move => s C a cl h tn tm t1s t2s HType HNth Hcl.
   et_dependent_ind HType => //.
@@ -1715,8 +1715,8 @@ Qed.
 
 Lemma Get_local_typing: forall C i t1s t2s,
     be_typing C [::BI_get_local i] (Tf t1s t2s) ->
-    {t & (List.nth_error (tc_local C) i = Some t) **
-           (t2s = t1s ++ [::t]) **
+    {t & (List.nth_error (tc_local C) i = Some t) /\
+           (t2s = t1s ++ [::t]) /\
            (i < length (tc_local C))}.
 Proof.
   move => C i t1s t2s HType.
@@ -1732,8 +1732,8 @@ Qed.
 
 Lemma Set_local_typing: forall C i t1s t2s,
     be_typing C [::BI_set_local i] (Tf t1s t2s) ->
-    {t & (List.nth_error (tc_local C) i = Some t) **
-      (t1s = t2s ++ [::t]) **
+    {t & (List.nth_error (tc_local C) i = Some t) /\
+      (t1s = t2s ++ [::t]) /\
       (i < length (tc_local C))}.
 Proof.
   move => C i t1s t2s HType.
@@ -1749,8 +1749,8 @@ Qed.
 
 Lemma Get_global_typing: forall C i t1s t2s,
     be_typing C [::BI_get_global i] (Tf t1s t2s) ->
-    {t & (option_map tg_t (List.nth_error (tc_global C) i) = Some t) **
-      (t2s = t1s ++ [::t]) **
+    {t & (option_map tg_t (List.nth_error (tc_global C) i) = Some t) /\
+      (t2s = t1s ++ [::t]) /\
       (i < length (tc_global C))}.
 Proof.
   move => C i t1s t2s HType.
@@ -1766,10 +1766,10 @@ Qed.
 
 Lemma Set_global_typing: forall C i t1s t2s,
     be_typing C [::BI_set_global i] (Tf t1s t2s) ->
-    {g & {t & (List.nth_error (tc_global C) i = Some g) **
-      (tg_t g = t) **
-      (is_mut g) **
-      (t1s = t2s ++ [::t]) **
+    {g & {t & (List.nth_error (tc_global C) i = Some g) /\
+      (tg_t g = t) /\
+      (is_mut g) /\
+      (t1s = t2s ++ [::t]) /\
       (i < length (tc_global C))}}.
 Proof.
   move => C i t1s t2s HType.
@@ -1785,8 +1785,8 @@ Qed.
 
 Lemma Load_typing: forall C t a off tp_sx t1s t2s,
     be_typing C [::BI_load t tp_sx a off] (Tf t1s t2s) ->
-    {ts & (t1s = ts ++ [::T_i32]) ** (t2s = ts ++ [::t]) **
-      (tc_memory C <> nil) **
+    {ts & (t1s = ts ++ [::T_i32]) /\ (t2s = ts ++ [::t]) /\
+      (tc_memory C <> nil) /\
       (load_store_t_bounds a (option_projl tp_sx) t)}.
 Proof.
   move => C t a off tp_sx t1s t2s HType.
@@ -1827,7 +1827,7 @@ Qed.
 
 Lemma Grow_memory_typing: forall C t1s t2s,
     be_typing C [::BI_grow_memory] (Tf t1s t2s) ->
-    {ts & (tc_memory C <> nil) ** (t2s = t1s) ** (t1s = ts ++ [::T_i32])}.
+    {ts & (tc_memory C <> nil) /\ (t2s = t1s) /\ (t1s = ts ++ [::T_i32])}.
 Proof.
   move => C t1s t2s HType.
   dependent induction HType; subst => //=.
@@ -2721,7 +2721,7 @@ Qed.
 
 Lemma nth_error_map: forall {X Y:Type} l n (f: X -> Y) fv,
     List.nth_error (map f l) n = Some fv ->
-    {v & (List.nth_error l n = Some v) ** (f v = fv)}.
+    {v & (List.nth_error l n = Some v) /\ (f v = fv)}.
 Proof.
   move => X Y l n.
   generalize dependent l.

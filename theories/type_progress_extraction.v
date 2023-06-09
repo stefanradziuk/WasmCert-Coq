@@ -70,12 +70,13 @@ Proof.
   assumption.
 Qed.
 
+Axiom admit_custom : forall (A : Type), A.
+
 Theorem H_config_typing_add_236 : config_typing emp_store_record emp_frame add_236 [:: T_i32].
 Proof.
   apply mk_config_typing.
   - repeat split; auto. apply TProp.Forall_nil.
   - apply mk_s_typing with (C := emp_context) (C0 := emp_context); auto.
-    Print mk_frame_typing.
     apply mk_frame_typing with (i := emp_instance) (C := emp_context); auto.
   - apply ety_a with (bes := add_236_bis).
     apply H_be_typing_add_236.
@@ -87,7 +88,9 @@ Definition fuel_100 : nat := 100.
 
 End ProgressExtract.
 
-Extraction Language Haskell.
+Extraction Language OCaml.
+
+Unset Extraction Optimize.
 
 Extraction "progress_extracted" ProgressExtract DummyHost.
 
