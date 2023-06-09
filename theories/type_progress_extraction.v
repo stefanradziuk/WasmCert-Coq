@@ -29,15 +29,99 @@ Definition t_preservation := t_preservation.
 
 Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
 
-Definition add_236_bis : seq basic_instruction := [::
-  BI_const (i32_of_Z (2)%Z);
-  BI_const (i32_of_Z (3)%Z);
-  BI_const (i32_of_Z (6)%Z);
-  BI_binop T_i32 (Binop_i BOI_add);
-  BI_binop T_i32 (Binop_i BOI_add)
-  ].
+(*  (func $fibi (param $n i32) (result i32)
+ *    (local $i i32)
+ *    (local $x i32)
+ *    (local $y i32)
+ *    (local $tmp i32)
+ *    (local.set $i (i32.const 0))
+ *    (local.set $x (i32.const 0))
+ *    (local.set $y (i32.const 1))
+ *    (; i is a loop counter ;)
+ *    (; x is 0th, y is 1st fib num ;)
+ *
+ *    (if (i32.eq (local.get $n) (i32.const 0))
+ *     (then (return (i32.const 0)))
+ *    )
+ *
+ *    (loop $loop
+ *      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+ *      (local.set $tmp (i32.add (local.get $x) (local.get $y)))
+ *      (local.set $x (local.get $y))
+ *      (local.set $y (local.get $tmp))
+ *
+ *      (; if $i is less than $n loop again ;)
+ *      (br_if $loop (i32.lt_s (local.get $i) (local.get $n)))
+ *    )
+ *
+ *    (local.get $x)
+ *  )
+ * locals:
+ *   $n: 0
+ *   $i: 1
+ *   $x: 2
+ *   $y: 3
+ * $tmp: 4
+ *)
 
-Definition add_236 : seq administrative_instruction := map AI_basic add_236_bis.
+Definition loop_body : seq basic_instruction := [::
+  (* i += 1 *)
+  BI_get_local 1;
+  BI_const (i32_of_Z 1);
+  BI_binop T_i32 (Binop_i BOI_add);
+  BI_set_local 1;
+
+  (* tmp = x + y *)
+  BI_get_local 2;
+  BI_get_local 3;
+  BI_binop T_i32 (Binop_i BOI_add);
+  BI_set_local 4;
+
+  (* x = y *)
+  BI_get_local 3;
+  BI_set_local 2;
+
+  (* y = tmp *)
+  BI_get_local 4;
+  BI_set_local 3;
+
+  (* i < n *)
+  BI_get_local 1;
+  BI_get_local 0;
+  BI_relop T_i32 (Relop_i (ROI_lt SX_S));
+  BI_br_if 0
+].
+
+Definition fib_bis : seq basic_instruction := [::
+  (* n = 10 *)
+  BI_const (i32_of_Z 10);
+  BI_set_local 0;
+
+  (* i = 0 *)
+  BI_const (i32_of_Z 0);
+  BI_set_local 1;
+
+  (* x = 0 *)
+  BI_const (i32_of_Z 0);
+  BI_set_local 2;
+
+  (* y = 1 *)
+  BI_const (i32_of_Z 1);
+  BI_set_local 3;
+
+  (* n == 0 *)
+  BI_get_local 0;
+  BI_testop T_i32 TO_eqz;
+  (* (if (i32.eq (local.get $n) (i32.const 0)) *)
+  BI_if
+    (Tf [::] [::T_i32])
+    (* then *)
+    [:: BI_const (i32_of_Z 0)]
+    (* else *)
+    [:: BI_loop (Tf [::] [::]) loop_body; BI_get_local 2]
+].
+
+Definition fib : seq administrative_instruction := map AI_basic fib_bis.
 
 Let emp_store_record : store_record := {|
   s_funcs   := [::];
@@ -59,6 +143,11 @@ Let emp_frame : frame := {|
   f_inst := emp_instance;
 |}.
 
+Let loc_frame : frame := {|
+  f_locs := [::i32_of_Z 0; i32_of_Z 0; i32_of_Z 0; i32_of_Z 0; i32_of_Z 0];
+  f_inst := emp_instance;
+|}.
+
 Let emp_context : t_context := {|
   tc_types_t := [::];
   tc_func_t  := [::];
@@ -70,25 +159,32 @@ Let emp_context : t_context := {|
   tc_return  := None;
 |}.
 
-Theorem H_be_typing_add_236 : be_typing emp_context add_236_bis (Tf [::] [:: T_i32]).
+Let loc_ts := [::T_i32; T_i32; T_i32; T_i32; T_i32].
+
+Let loc_context : t_context := upd_local emp_context loc_ts.
+
+Compute (b_e_type_checker loc_context fib_bis (Tf [::] [::T_i32])).
+
+Theorem H_be_typing_fib : be_typing loc_context fib_bis (Tf [::] [:: T_i32]).
 Proof.
   remember (b_e_type_checker_reflects_typing
-    emp_context add_236_bis (Tf [::] [:: T_i32])) as H.
+    loc_context fib_bis (Tf [::] [:: T_i32])) as H.
+  compute in H.
   inversion H.
   assumption.
 Qed.
 
-Theorem H_config_typing_add_236 : config_typing emp_store_record emp_frame add_236 [:: T_i32].
+Theorem H_config_typing_fib : config_typing emp_store_record loc_frame fib [:: T_i32].
 Proof.
   apply mk_config_typing.
   - repeat split; auto. apply TProp.Forall_nil.
-  - apply mk_s_typing with (C := emp_context) (C0 := emp_context); auto.
+  - apply mk_s_typing with (C := loc_context) (C0 := loc_context); auto.
     apply mk_frame_typing with (i := emp_instance) (C := emp_context); auto.
-  - apply ety_a with (bes := add_236_bis).
-    apply H_be_typing_add_236.
+  - apply ety_a with (bes := fib_bis).
+    apply H_be_typing_fib.
 Defined.
 
-Definition ts_add_236 := [:: T_i32].
+Definition ts_fib := [:: T_i32].
 
 Definition fuel_100 : nat := 100.
 
