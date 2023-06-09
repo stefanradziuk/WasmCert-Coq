@@ -33,31 +33,31 @@ Definition pp_head_val (es : list administrative_instruction) :=
   | _ => String.EmptyString
   end.
 
-Definition i32_of_Z (z: Z) := VAL_int32 (Wasm_int.int_of_Z i32m z).
+Definition i64_of_Z (z: Z) := VAL_int64 (Wasm_int.int_of_Z i64m z).
 
-(*  (func $fibi (param $n i32) (result i32)
- *    (local $i i32)
- *    (local $x i32)
- *    (local $y i32)
- *    (local $tmp i32)
- *    (local.set $i (i32.const 0))
- *    (local.set $x (i32.const 0))
- *    (local.set $y (i32.const 1))
+(*  (func $fibi (param $n i64) (result i64)
+ *    (local $i i64)
+ *    (local $x i64)
+ *    (local $y i64)
+ *    (local $tmp i64)
+ *    (local.set $i (i64.const 0))
+ *    (local.set $x (i64.const 0))
+ *    (local.set $y (i64.const 1))
  *    (; i is a loop counter ;)
  *    (; x is 0th, y is 1st fib num ;)
  *
- *    (if (i32.eq (local.get $n) (i32.const 0))
- *     (then (return (i32.const 0)))
+ *    (if (i64.eq (local.get $n) (i64.const 0))
+ *     (then (return (i64.const 0)))
  *    )
  *
  *    (loop $loop
- *      (local.set $i (i32.add (local.get $i) (i32.const 1)))
- *      (local.set $tmp (i32.add (local.get $x) (local.get $y)))
+ *      (local.set $i (i64.add (local.get $i) (i64.const 1)))
+ *      (local.set $tmp (i64.add (local.get $x) (local.get $y)))
  *      (local.set $x (local.get $y))
  *      (local.set $y (local.get $tmp))
  *
  *      (; if $i is less than $n loop again ;)
- *      (br_if $loop (i32.lt_s (local.get $i) (local.get $n)))
+ *      (br_if $loop (i64.lt_s (local.get $i) (local.get $n)))
  *    )
  *
  *    (local.get $x)
@@ -75,14 +75,14 @@ Let n : Z := 50.
 Definition loop_body : seq basic_instruction := [::
   (* i += 1 *)
   BI_get_local 1;
-  BI_const (i32_of_Z 1);
-  BI_binop T_i32 (Binop_i BOI_add);
+  BI_const (i64_of_Z 1);
+  BI_binop T_i64 (Binop_i BOI_add);
   BI_set_local 1;
 
   (* tmp = x + y *)
   BI_get_local 2;
   BI_get_local 3;
-  BI_binop T_i32 (Binop_i BOI_add);
+  BI_binop T_i64 (Binop_i BOI_add);
   BI_set_local 4;
 
   (* x = y *)
@@ -96,35 +96,35 @@ Definition loop_body : seq basic_instruction := [::
   (* i < n *)
   BI_get_local 1;
   BI_get_local 0;
-  BI_relop T_i32 (Relop_i (ROI_lt SX_S));
+  BI_relop T_i64 (Relop_i (ROI_lt SX_S));
   BI_br_if 0
 ].
 
 Definition fib_bis : seq basic_instruction := [::
   (* n = 10 *)
-  BI_const (i32_of_Z n);
+  BI_const (i64_of_Z n);
   BI_set_local 0;
 
   (* i = 0 *)
-  BI_const (i32_of_Z 0);
+  BI_const (i64_of_Z 0);
   BI_set_local 1;
 
   (* x = 0 *)
-  BI_const (i32_of_Z 0);
+  BI_const (i64_of_Z 0);
   BI_set_local 2;
 
   (* y = 1 *)
-  BI_const (i32_of_Z 1);
+  BI_const (i64_of_Z 1);
   BI_set_local 3;
 
   (* n == 0 *)
   BI_get_local 0;
-  BI_testop T_i32 TO_eqz;
-  (* (if (i32.eq (local.get $n) (i32.const 0)) *)
+  BI_testop T_i64 TO_eqz;
+  (* (if (i64.eq (local.get $n) (i64.const 0)) *)
   BI_if
-    (Tf [::] [::T_i32])
+    (Tf [::] [::T_i64])
     (* then *)
-    [:: BI_const (i32_of_Z 0)]
+    [:: BI_const (i64_of_Z 0)]
     (* else *)
     [:: BI_loop (Tf [::] [::]) loop_body; BI_get_local 2]
 ].
@@ -152,7 +152,7 @@ Let emp_frame : frame := {|
 |}.
 
 Let loc_frame : frame := {|
-  f_locs := [::i32_of_Z 0; i32_of_Z 0; i32_of_Z 0; i32_of_Z 0; i32_of_Z 0];
+  f_locs := [::i64_of_Z 0; i64_of_Z 0; i64_of_Z 0; i64_of_Z 0; i64_of_Z 0];
   f_inst := emp_instance;
 |}.
 
@@ -167,22 +167,22 @@ Let emp_context : t_context := {|
   tc_return  := None;
 |}.
 
-Let loc_ts := [::T_i32; T_i32; T_i32; T_i32; T_i32].
+Let loc_ts := [::T_i64; T_i64; T_i64; T_i64; T_i64].
 
 Let loc_context : t_context := upd_local emp_context loc_ts.
 
-Compute (b_e_type_checker loc_context fib_bis (Tf [::] [::T_i32])).
+Compute (b_e_type_checker loc_context fib_bis (Tf [::] [::T_i64])).
 
-Theorem H_be_typing_fib : be_typing loc_context fib_bis (Tf [::] [:: T_i32]).
+Theorem H_be_typing_fib : be_typing loc_context fib_bis (Tf [::] [:: T_i64]).
 Proof.
   remember (b_e_type_checker_reflects_typing
-    loc_context fib_bis (Tf [::] [:: T_i32])) as H.
+    loc_context fib_bis (Tf [::] [:: T_i64])) as H.
   compute in H.
   inversion H.
   assumption.
 Qed.
 
-Theorem H_config_typing_fib : config_typing emp_store_record loc_frame fib [:: T_i32].
+Theorem H_config_typing_fib : config_typing emp_store_record loc_frame fib [:: T_i64].
 Proof.
   apply mk_config_typing.
   - repeat split; auto. apply TProp.Forall_nil.
@@ -192,7 +192,7 @@ Proof.
     apply H_be_typing_fib.
 Defined.
 
-Definition ts_fib := [:: T_i32].
+Definition ts_fib := [:: T_i64].
 
 (* TODO use Z for fuel *)
 Definition fuel_fib : nat := Z.to_nat (Z.mul n 20).
@@ -212,6 +212,13 @@ Extraction "progress_extracted" ProgressExtract DummyHost.
 #   let cl2s cl = String.concat "" (List.map (String.make 1) cl);;
 #   let ppstr = ProgressExtract.pp_head_val e' in " " ^ (cl2s ppstr);;
 - : string = " i32.const -298632863\n"
+
+   let itp_partially_applied = ProgressExtract.interpret_multi_step ProgressExtract.fuel_fib ProgressExtract.emp_store_record ProgressExtract.loc_frame ProgressExtract.fib ProgressExtract.ts_fib (Obj.magic ProgressExtract.host_eqType);;
+val itp_partially_applied : config_typing -> administrative_instruction list =
+  <fun>
+#   let e' = time itp_partially_applied ProgressExtract.coq_H_config_typing_fib;;
+execution time: 21.410549s
+
 
  *)
 
