@@ -1,6 +1,7 @@
 From mathcomp Require Import eqtype seq.
 From Coq Require Import Program.Equality ZArith_base Extraction.
-From Wasm Require Export type_progress type_preservation.
+From Wasm Require Export type_progress type_preservation
+  type_checker type_checker_reflects_typing.
 
 
 Module ProgressExtract.
@@ -63,39 +64,11 @@ Let emp_context : t_context := {|
 
 Theorem H_be_typing_add_236 : be_typing emp_context add_236_bis (Tf [::] [:: T_i32]).
 Proof.
-  apply bet_composition with
-    (es := [::
-      BI_const (i32_of_Z (2)%Z);
-      BI_const (i32_of_Z (3)%Z);
-      BI_const (i32_of_Z (6)%Z);
-      BI_binop T_i32 (Binop_i BOI_add)
-    ])
-    (t2s := [:: T_i32; T_i32]).
-    - apply bet_composition with
-      (es := [::
-        BI_const (i32_of_Z (2)%Z);
-        BI_const (i32_of_Z (3)%Z);
-        BI_const (i32_of_Z (6)%Z)
-      ])
-      (t2s := [:: T_i32; T_i32; T_i32]).
-      * apply bet_composition with
-        (es := [::
-          BI_const (i32_of_Z (2)%Z);
-          BI_const (i32_of_Z (3)%Z)
-        ])
-        (t2s := [:: T_i32; T_i32]).
-        + apply bet_composition with
-          (es := [:: BI_const (i32_of_Z (2)%Z)])
-          (t2s := [:: T_i32]).
-          -- apply bet_const.
-          -- apply bet_weakening with (ts := [:: T_i32]).
-             apply bet_const.
-        + apply bet_weakening with (ts := [:: T_i32; T_i32]).
-          apply bet_const.
-      * apply bet_weakening with (ts := [:: T_i32]).
-        apply bet_binop. apply Binop_i32_agree.
-    - apply bet_binop. apply Binop_i32_agree.
-Defined.
+  remember (b_e_type_checker_reflects_typing
+    emp_context add_236_bis (Tf [::] [:: T_i32])) as H.
+  inversion H.
+  assumption.
+Qed.
 
 Theorem H_config_typing_add_236 : config_typing emp_store_record emp_frame add_236 [:: T_i32].
 Proof.
