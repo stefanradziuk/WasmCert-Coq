@@ -2757,10 +2757,10 @@ Proof.
     destruct (split_vals_e es'') eqn:Hes.
     by inversion Hsplitvals.
 Qed.
-    
-Theorem run_step (measure: nat) hs s f (es: list administrative_instruction) (Hmeasure: run_step_measure es = measure): res_step' hs s f es
+
+Theorem run_step hs s f (es: list administrative_instruction) (Hmeasure: exists measure, run_step_measure es = measure) : res_step' hs s f es
   with
-  run_one_step'' (measure: nat) hs s f ves e (Htrap : (e_is_trap e) = false) (Hconst : (is_const e) = false) (Hmeasure: run_one_step_measure e = measure) : res_step'_separate_e hs s f ves e.
+  run_one_step'' hs s f ves e (Htrap : (e_is_trap e) = false) (Hconst : (is_const e) = false) (Hmeasure: exists measure, run_one_step_measure e = measure) : res_step'_separate_e hs s f ves e.
 Proof.
   (* NOTE: not indenting the two main subgoals - XXX use {}? *)
   (* run_step *)
@@ -2780,9 +2780,10 @@ Proof.
         -- apply RS'_value.
            by apply value_trap with (e := e) (es'' := es'') (ves := ves).
       + remember (split_vals_e_not_const Heqes) as Hconst.
-        destruct measure as [|measure']=> //.
-        injection Hmeasure; clear Hmeasure; move => Hmeasure.
-        remember (run_one_step'' measure' hs s f (rev ves) e Htrap Hconst Hmeasure) as r.
+        (* injection Hmeasure; clear Hmeasure; move => Hmeasure. *)
+        assert (Hmeasure' : exists measure, run_one_step_measure e = measure).
+        { destruct Hmeasure as [[|measure'] Hmeasure] => //. eauto. }
+        remember (run_one_step'' hs s f (rev ves) e Htrap Hconst Hmeasure') as r.
         destruct r as [| k bvs Hbr | rvs | hs' s' f' res].
         -- (* RS''_error *)
            apply RS'_error.
@@ -2799,10 +2800,9 @@ Proof.
            apply <<hs', s', f', (res ++ es'')>>.
            by eapply reduce_rec with (es' := es') (ves := ves); subst es'.
   }
-  
+
   (* run_one_step'' *)
   {
-    clear run_one_step''.
   (* initial es, useful as an arg for reduce *)
   remember ((vs_to_es ves) ++ [::e]) as es0 eqn:Heqes0.
     destruct e as [
@@ -3335,11 +3335,9 @@ Proof.
            apply <<hs, s, f, vs_to_es ves ++ es>>'.
            by apply reduce_label_const.
         -- (* false *)
-          simpl in Hmeasure.
-          destruct measure as [|measure'] => //.
-          injection Hmeasure; clear Hmeasure; move => Hmeasure.
-          rewrite - run_step_measure_eq in Hmeasure; last done.
-          destruct (run_step measure' hs s f es Hmeasure) as
+          assert (Hmeasure' : exists measure, run_step_measure es = measure).
+          { destruct Hmeasure as [[|measure'] Hmeasure] => //. eauto. }
+          destruct (run_step hs s f es Hmeasure') as
              [ Hv | Herr | n bvs H | rvs H | hs' s' f' es'] eqn:?.
            ** (* RS'_value hs s f Hv *)
               exfalso. by apply const_trap_contradiction with (es := es).
@@ -3384,12 +3382,10 @@ Proof.
               apply RS''_error.
               by apply local_error_const_len.
         -- (* false *)
-          simpl in Hmeasure.
-          destruct measure as [|measure'] => //.
-          injection Hmeasure; clear Hmeasure; move => Hmeasure.
-          rewrite - run_step_measure_eq in Hmeasure; last done.
-           destruct (run_step measure' hs s lf es Hmeasure) as
-             [ Hv | Herr | n bvs | rvs H | hs' s' f' es'] eqn:?.
+           assert (Hmeasure' : exists measure, run_step_measure es = measure).
+           { destruct Hmeasure as [[|measure'] Hmeasure] => //. eauto. }
+           destruct (run_step hs s lf es Hmeasure') as
+             [ Hv | Herr | n bvs | rvs H | hs' s' f' es' Hred] eqn:?.
            ** (* RS'_value hs s f Hv *)
               exfalso. by apply const_trap_contradiction with (es := es).
            ** (* RS'_error hs Herr *)
