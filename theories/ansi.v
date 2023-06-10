@@ -32,5 +32,5 @@ Definition code_of_fg (fg : ansi_fg) : string :=
 Definition show_fg (fg : ansi_fg) : string :=
   ansi_escape ++ "[" ++ code_of_fg fg ++ "m".
 
-Definition with_fg (fg : ansi_fg) (s : string) : string :=
-  show_fg fg ++ s ++ show_fg FG_reset.
+Definition with_fg (fg : ansi_fg) (s : string) : string := s.
+  (* show_fg fg ++ s ++ show_fg FG_reset. *)
