@@ -1589,4 +1589,17 @@ Fixpoint interpret_multi_step (fuel : nat) s f es ts hs (HType : config_typing s
                   end
      end.
 
+Fixpoint interpret_multi_step_pf (fuel : nat) s f es ts hs (HType : config_typing s f es ts) : {es' & {s' & {f' & config_typing s' f' es' ts}}}
+  := match fuel with
+     (* ran out of fuel *)
+     | O => existT _ es (existT _ s (existT _ f HType))
+     | S fuel' => match t_progress hs HType with
+                  (* es is already in terminal form *)
+                  | inl _ => existT _ es (existT _ s (existT _ f HType))
+                  | inr (existT _ (existT _ (existT _ (existT hs' HReduce)))) =>
+                      let HType' := t_preservation HReduce HType in
+                      interpret_multi_step_pf fuel' hs' HType'
+                  end
+     end.
+
 End Host.

@@ -24,6 +24,7 @@ Let config_typing := @config_typing host_eqType.
 Definition t_progress := @t_progress host_eqType host_instance.
 Definition interpret_one_step := @interpret_one_step host_eqType host_instance.
 Definition interpret_multi_step := @interpret_multi_step host_eqType host_instance.
+Definition interpret_multi_step_pf := @interpret_multi_step_pf host_eqType host_instance.
 
 Definition t_preservation := t_preservation.
 
