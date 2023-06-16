@@ -155,6 +155,8 @@ Let loc_frame : frame := {|
 (* TODO use Z for fuel *)
 Definition fuel_fib (n : Z) : nat := Z.to_nat (Z.mul (Z.add n 1) 20).
 
+Definition depth : nat := 10.
+
 Definition n_0 : Z := 0.
 Definition n_10 : Z := 10.
 Definition n_20 : Z := 20.
