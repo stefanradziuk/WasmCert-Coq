@@ -73,9 +73,7 @@ Definition i64_of_Z (z: Z) := VAL_int64 (Wasm_int.int_of_Z i64m z).
  * $tmp: 4
  *)
 
-Let n : Z := 10.
-
-Definition loop_body : seq basic_instruction := [::
+Definition loop_body (n : Z) : seq basic_instruction := [::
   (* i += 1 *)
   BI_get_local 1;
   BI_const (i64_of_Z 1);
@@ -103,7 +101,7 @@ Definition loop_body : seq basic_instruction := [::
   BI_br_if 0
 ].
 
-Definition fib_bis : seq basic_instruction := [::
+Definition fib_bis (n : Z) : seq basic_instruction := [::
   (* n = 10 *)
   BI_const (i64_of_Z n);
   BI_set_local 0;
@@ -129,10 +127,10 @@ Definition fib_bis : seq basic_instruction := [::
     (* then *)
     [:: BI_const (i64_of_Z 0)]
     (* else *)
-    [:: BI_loop (Tf [::] [::]) loop_body; BI_get_local 2]
+    [:: BI_loop (Tf [::] [::]) (loop_body n); BI_get_local 2]
 ].
 
-Definition fib : seq administrative_instruction := map AI_basic fib_bis.
+Definition fib (n : Z) : seq administrative_instruction := map AI_basic (fib_bis n).
 
 Let emp_store_record : store_record := {|
   s_funcs   := [::];
@@ -155,8 +153,22 @@ Let loc_frame : frame := {|
 |}.
 
 (* TODO use Z for fuel *)
-Definition fuel_fib : nat := Z.to_nat (Z.mul (Z.add n 1) 20).
-Definition depth : nat := 10.
+Definition fuel_fib (n : Z) : nat := Z.to_nat (Z.mul (Z.add n 1) 20).
+
+Definition n_0 : Z := 0.
+Definition n_10 : Z := 10.
+Definition n_20 : Z := 20.
+Definition n_30 : Z := 30.
+Definition n_40 : Z := 40.
+Definition n_50 : Z := 50.
+Definition n_60 : Z := 60.
+Definition n_100 : Z := 100.
+Definition n_1000 : Z := 1000.
+Definition n_2000 : Z := 2000.
+Definition n_5000 : Z := 5000.
+Definition n_10000 : Z := 10000.
+Definition n_15000 : Z := 15000.
+Definition n_20000 : Z := 20000.
 
 End Extr.
 
