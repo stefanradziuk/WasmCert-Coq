@@ -8,9 +8,14 @@ let time f x =
 
 let cl2s cl = String.concat "" (List.map (String.make 1) cl);;
 
-let interpret_partially_applied = Extr.run_v Extr.emp_store_record Extr.loc_frame Extr.fib;;
+let n = Extr.n_(*n*);;
 
-let res = time interpret_partially_applied Extr.fuel_fib;;
+let fib = Extr.fib n;;
+let fuel = Extr.fuel_fib n;;
+
+let interpret_partially_applied = Extr.run_v Extr.emp_store_record Extr.loc_frame fib;;
+
+let res = time interpret_partially_applied fuel;;
 
 let ppstr = cl2s (Extr.pp_res_val res);;
 
