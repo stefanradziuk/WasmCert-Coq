@@ -30,6 +30,7 @@
 		"@opam/menhir": "*",
 		"@opam/ocamlfind": "1.9.3",
 		"@opam/odoc": "*",
+		"@opam/coq-serapi": ">=8.10.0+0.7.0",
 		"compcert": "github:raoxiaojia/CompCert#ad331c0f60d53d14601cd44412269a184ba63721",
 		"coq-ext-lib": "*",
 		"coq-flocq": "*",
