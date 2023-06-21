@@ -196,7 +196,7 @@ Defined.
 Definition ts_fib := [:: T_i64].
 
 (* TODO use Z for fuel *)
-Definition fuel_fib : nat := Z.to_nat (Z.mul n 20).
+Definition fuel_fib : nat := Z.to_nat (Z.mul (Z.add n 1) 20).
 
 End ProgressExtract.
 
