@@ -1525,19 +1525,12 @@ Proof.
   by cats1_last_eq Ht1s.
 Qed.
 
-(* TODO dedupe testop_*_error *)
-Lemma testop_f32_error : forall s f ves testop,
-  ~ fragment_typeable s f ves [:: AI_basic (BI_testop T_f32 testop)].
+Lemma testop_float_error : forall s f t ves testop,
+  ~ is_int_t t ->
+  ~ fragment_typeable s f ves [:: AI_basic (BI_testop t testop)].
 Proof.
-  intros s f ves testop [C [C' [ret [lab [t1s [t2s [t1s' [? [Ht1s [? [? Hetype]]]]]]]]]]].
-  apply et_to_bet in Hetype as Hbtype; last by auto_basic.
-  apply Testop_typing_is_int_t in Hbtype => //.
-Qed.
-
-Lemma testop_f64_error : forall s f ves testop,
-  ~ fragment_typeable s f ves [:: AI_basic (BI_testop T_f64 testop)].
-Proof.
-  intros s f ves testop [C [C' [ret [lab [t1s [t2s [t1s' [? [Ht1s [? [? Hetype]]]]]]]]]]].
+  intros s f t ves testop Ht
+    [C [C' [ret [lab [t1s [t2s [t1s' [? [Ht1s [? [? Hetype]]]]]]]]]]].
   apply et_to_bet in Hetype as Hbtype; last by auto_basic.
   apply Testop_typing_is_int_t in Hbtype => //.
 Qed.
@@ -2796,10 +2789,10 @@ Proof.
         by eapply reduce_testop_i64.
 
     * (* AI_basic (BI_testop T_f32 testop) *)
-      apply RS''_error. by apply testop_f32_error.
+      apply RS''_error. by apply testop_float_error.
 
     * (* AI_basic (BI_testop T_f64 testop) *)
-      apply RS''_error. by apply testop_f64_error.
+      apply RS''_error. by apply testop_float_error.
 
     * (* AI_basic (BI_relop t op) *)
       destruct ves as [|v2 [|v1 ves']];
