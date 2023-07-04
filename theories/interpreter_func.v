@@ -443,6 +443,39 @@ Proof.
   apply Drop_typing in Hbtype as [??]. by destruct t2s.
 Qed.
 
+Lemma last_eq_inv : forall T (x y : T) (xs : seq T),
+  xs ++ [:: x] = [:: y] ->
+  x = y.
+Proof.
+  intros T x y xs Heq.
+  apply f_equal with (f := fun xs => last None (map Some xs)) in Heq.
+  simpl in Heq.
+  rewrite map_cat in Heq.
+  rewrite last_cat in Heq.
+  by injection Heq.
+Qed.
+
+Lemma drop_error_step : forall (hs : host_state) s f ves,
+  ves = [::] ->
+  ~ exists hs' s' f' es',
+    reduce hs s f (ves ++ [:: AI_basic BI_drop]) hs' s' f' es'.
+Proof.
+  intros hs s f ves -> [hs' [s' [f' [es' H]]]].
+  simpl in H.
+  inversion H; try by apply last_eq_inv in H0.
+  - rename H0 into Hsimple.
+    inversion Hsimple; try by apply last_eq_inv in H0.
+    move/lfilledP in H9. inversion H9.
+    (* H12 : vs ++ AI_trap :: es'0 = [:: AI_basic BI_drop] *)
+    (* TODO do some list manipulation *)
+    admit.
+  - (* H0 : reduce hs s f es hs' s' f' es'0 *)
+    (* H1 : lfilled k lh es [:: AI_basic BI_drop] *)
+    (* H2 : lfilled k lh es'0 es' *)
+    (* TODO need IH *)
+    admit.
+Admitted.
+
 Lemma reduce_select_false : forall (hs : host_state) s f c v2 v1 ves',
   c == Wasm_int.int_zero i32m ->
   reduce
